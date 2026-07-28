@@ -18,7 +18,6 @@
             --warning-color: #f59e0b;
         }
 
-        /* RESET & DISABLE MOBIL TAP HIGHLIGHT KOTAK ABU/PUTIH */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -46,7 +45,6 @@
             gap: 16px;
         }
 
-        /* INITIAL LOADER OVERLAY */
         #pageLoader {
             position: fixed; inset: 0; background: #0b0f19; z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -58,7 +56,6 @@
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* CARDS & HEADER */
         header, .card {
             background-color: var(--card-bg);
             padding: 20px;
@@ -67,7 +64,6 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
-        /* HEADER FLEXBOX - NO OVERLAPPING */
         header {
             display: flex;
             flex-direction: column;
@@ -112,7 +108,6 @@
             margin-left: 48px;
         }
 
-        /* LEFT SIDEBAR DRAWER */
         .drawer-overlay {
             position: fixed; inset: 0; background: rgba(11, 15, 25, 0.7);
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -148,7 +143,6 @@
         input[type="text"], input[type="number"] { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--card-border); background-color: #0b0f19; color: var(--text-main); font-size: 0.88rem; transition: border-color 0.2s; }
         input:focus { border-color: var(--accent-color); }
 
-        /* BUTTONS */
         .btn { background-color: var(--accent-color); color: #0b0f19; font-weight: 600; padding: 10px 14px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.85rem; width: 100%; }
         .btn:active { transform: scale(0.98); background-color: var(--accent-hover); }
         .btn-secondary { background-color: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); }
@@ -162,7 +156,6 @@
         .url-box { background-color: #0b0f19; padding: 12px; border-radius: 10px; border: 1px dashed var(--accent-color); display: flex; align-items: center; justify-content: space-between; gap: 10px; word-break: break-all; }
         .url-text { font-family: monospace; color: var(--accent-color); font-size: 0.82rem; }
 
-        /* KEY LIST & ITEM */
         .key-list { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
         .key-item { background-color: #0b0f19; padding: 14px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 12px; }
         .key-header-info { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
@@ -179,7 +172,6 @@
         .key-actions-grid { display: flex; gap: 6px; width: 100%; margin-top: 4px; }
         .key-actions-grid .btn { flex: 1; padding: 8px 6px; font-size: 0.8rem; }
 
-        /* MODAL TASKBAR TENGAH */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(11, 15, 25, 0.75);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -189,7 +181,7 @@
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-card {
             background-color: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 18px; padding: 20px; width: 100%; max-width: 440px;
+            border-radius: 18px; padding: 20px; width: 100%; max-width: 460px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 14px;
             transform: scale(0.96); transition: transform 0.25s ease;
         }
@@ -199,7 +191,7 @@
         .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; font-size: 1.1rem; }
         .close-btn:active { background-color: rgba(239, 68, 68, 0.15); color: var(--danger-color); }
 
-        .log-item { background: #0b0f19; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--card-border); font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .device-card { background: #0b0f19; padding: 12px; border-radius: 12px; border: 1px solid var(--card-border); font-size: 0.82rem; display: flex; flex-direction: column; gap: 6px; }
         .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 0.85rem; display: none; z-index: 4000; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
 
         @media (max-width: 480px) {
@@ -210,7 +202,6 @@
 </head>
 <body>
 
-<!-- INITIAL LOADER -->
 <div id="pageLoader">
     <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line>
@@ -221,7 +212,6 @@
     <p style="margin-top: 12px; font-size: 0.82rem; color: var(--accent-color); font-weight: 600;">MEMUAT SYSTEM...</p>
 </div>
 
-<!-- LEFT SIDEBAR DRAWER -->
 <div class="drawer-overlay" id="leftDrawer" onclick="closeDrawer()">
     <div class="drawer-content" onclick="event.stopPropagation()">
         <div class="drawer-header">
@@ -250,7 +240,6 @@
 </div>
 
 <div class="container">
-    <!-- HEADER BAR BARU (RAPI, TIDAK SALING TIMPA) -->
     <header>
         <div class="header-top">
             <button class="menu-btn" onclick="openDrawer()" title="Menu">
@@ -308,7 +297,7 @@
     </div>
 </div>
 
-<!-- MODAL HWID DEVICES & EXPIRED SETTINGS -->
+<!-- MODAL MANAGE DEVICES & SETTINGS -->
 <div class="modal-overlay" id="hwidModal">
     <div class="modal-card">
         <div class="modal-header">
@@ -327,10 +316,10 @@
         </div>
         <button class="btn btn-secondary" onclick="saveKeySettingsFromModal()">Update Masa Aktif & Limit</button>
 
-        <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">Daftar Device HWID Terhubung:</p>
-        <div id="modalHwidList" style="display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto;"></div>
+        <p style="font-size: 0.85rem; font-weight:600; color: var(--accent-color); margin-top: 6px;">Daftar Detail Device Terhubung:</p>
+        <div id="modalHwidList" style="display: flex; flex-direction: column; gap: 10px; max-height: 220px; overflow-y: auto;"></div>
 
-        <button class="btn btn-warning" onclick="resetAllHwidInModal()">Reset Semua Device HWID</button>
+        <button class="btn btn-warning" onclick="resetAllHwidInModal()">Unlink Semua Device</button>
     </div>
 </div>
 
@@ -470,12 +459,28 @@ async function openHwidModal(id) {
         if (hwids.length === 0) {
             container.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem; text-align:center; padding:8px;">Belum ada device terhubung.</p>`;
         } else {
-            container.innerHTML = hwids.map(h => `
-                <div class="log-item">
-                    <span>${escapeHtml(h)}</span>
-                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem; width: auto;" onclick="removeSingleHwid('${escapeHtml(h)}')">Unlink</button>
-                </div>
-            `).join("");
+            container.innerHTML = hwids.map(h => {
+                const hwidVal = typeof h === 'string' ? h : h.hwid;
+                const nameVal = typeof h === 'string' ? 'Perangkat Android/PC' : (h.name || 'Perangkat Android/PC');
+                const ipVal = typeof h === 'string' ? 'IP: Tidak diketahui' : `IP: ${h.ip || 'Tidak diketahui'}`;
+                const timeVal = (typeof h === 'object' && h.last_seen) 
+                    ? `Terakhir: ${new Date(h.last_seen).toLocaleString("id-ID")}` 
+                    : '';
+
+                return `
+                    <div class="device-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <span style="font-weight: 700; color: var(--accent-color); font-size: 0.88rem;">${escapeHtml(nameVal)}</span>
+                            <button class="btn btn-danger" style="padding: 4px 10px; font-size: 0.75rem; width: auto;" onclick="removeSingleHwid('${escapeHtml(hwidVal)}')">Unlink</button>
+                        </div>
+                        <span style="font-size: 0.76rem; color: #94a3b8; font-family: monospace; word-break: break-all;">HWID: ${escapeHtml(hwidVal)}</span>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                            <span>${escapeHtml(ipVal)}</span>
+                            ${timeVal ? `<span>• ${escapeHtml(timeVal)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join("");
         }
     } catch(e) { container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Gagal memuat devices.</p>`; }
 }
@@ -513,11 +518,11 @@ async function removeSingleHwid(targetHwid) {
         });
         const resData = await res.json();
         if (resData.status) {
-            showToast("Device dihapus!");
+            showToast("Device berhasil di-Unlink!");
             openHwidModal(activeModalKeyId);
             loadKeysFromDatabase();
         }
-    } catch (e) { alert("Gagal reset HWID"); }
+    } catch (e) { alert("Gagal Unlink HWID"); }
 }
 
 async function resetAllHwidInModal() {
@@ -530,7 +535,7 @@ async function resetAllHwidInModal() {
         });
         const resData = await res.json();
         if (resData.status) {
-            showToast("Semua Device Direset!");
+            showToast("Semua Device Berhasil Di-Unlink!");
             openHwidModal(activeModalKeyId);
             loadKeysFromDatabase();
         }

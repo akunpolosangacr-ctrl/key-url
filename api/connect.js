@@ -33,7 +33,7 @@ export default async function handler(req, res) {
             await sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS hwid_list TEXT DEFAULT '[]';`;
         } catch (e) {}
 
-        // PROTECTED PAGE UNTUK GET BROWSER Direct
+        // PROTECTED PAGE UNTUK GET BROWSER DIRECT
         if (req.method === 'GET' && !req.query.action) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(200).send(`
@@ -137,7 +137,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key terhapus" });
         }
 
-        // ACTION: RESET HWID DEVICE
+        // ACTION: RESET HWID DEVICE (UNLINK)
         if (action === 'reset_hwid') {
             const { id, target_hwid } = req.body || req.query;
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -149,7 +149,7 @@ export default async function handler(req, res) {
             try { hwids = JSON.parse(rows[0].hwid_list || '[]'); } catch (e) { hwids = []; }
 
             if (target_hwid) {
-                hwids = hwids.filter(h => h !== target_hwid);
+                hwids = hwids.filter(h => (typeof h === 'string' ? h !== target_hwid : h.hwid !== target_hwid));
             } else {
                 hwids = [];
             }
@@ -172,10 +172,12 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, data: keys });
         }
 
-        // VALIDASI POST CLIENT APP (TULISAN Sesuai Request)
+        // VALIDASI POST CLIENT APP (MENYIMPAN DETIL INFO DEVICE)
         if (req.method === 'POST') {
             const apiKey = req.body?.key || req.body?.api_key;
-            const hwid = req.body?.hwid || req.body?.device_id || 'UNKNOWN_DEVICE';
+            const rawHwid = req.body?.hwid || req.body?.device_id || 'UNKNOWN_DEVICE';
+            const deviceName = req.body?.device_name || req.body?.model || req.body?.device || 'Android/PC Device';
+            const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || 'IP N/A';
 
             if (!apiKey) return res.status(400).json({ status: false, valid: false, message: "Key wajib diisi!" });
 
@@ -190,7 +192,20 @@ export default async function handler(req, res) {
             try { hwidList = JSON.parse(keyData.hwid_list || '[]'); } catch (e) { hwidList = []; }
             const deviceLimit = keyData.device_limit || 1;
 
-            if (!hwidList.includes(hwid)) {
+            // Cari index device terhubung
+            const existingIndex = hwidList.findIndex(item => (typeof item === 'string' ? item === rawHwid : item.hwid === rawHwid));
+
+            if (existingIndex !== -1) {
+                // Update info device terkini
+                hwidList[existingIndex] = {
+                    hwid: rawHwid,
+                    name: deviceName,
+                    ip: clientIp,
+                    last_seen: new Date().toISOString()
+                };
+                await sql`UPDATE api_keys SET hwid_list = ${JSON.stringify(hwidList)} WHERE id = ${keyData.id}`;
+            } else {
+                // Tambah baru jika belum ada dan limit masih cukup
                 if (hwidList.length >= deviceLimit) {
                     return res.status(403).json({
                         status: false,
@@ -198,7 +213,12 @@ export default async function handler(req, res) {
                         message: `Batas limit device tercapai (${hwidList.length}/${deviceLimit})!`
                     });
                 }
-                hwidList.push(hwid);
+                hwidList.push({
+                    hwid: rawHwid,
+                    name: deviceName,
+                    ip: clientIp,
+                    last_seen: new Date().toISOString()
+                });
                 await sql`UPDATE api_keys SET hwid_list = ${JSON.stringify(hwidList)} WHERE id = ${keyData.id}`;
             }
 
