@@ -86,6 +86,7 @@ export default async function handler(req, res) {
                 return res.status(400).json({ status: false, message: "Key sudah terpakai di database!" });
             }
 
+            // Presisi 28 Juli 2026 + activeDays
             const expiredAt = new Date(Date.now() + activeDays * 24 * 60 * 60 * 1000);
 
             const result = await sql`
@@ -96,7 +97,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key tersimpan!", data: result[0] });
         }
 
-        // ACTION: UPDATE KEY (TAMBAH MASA AKTIF & LIMIT DEVICE)
+        // ACTION: UPDATE KEY (FIX BUG 130 HARI & MASA AKTIF AKURAT)
         if (action === 'update_key') {
             const { id, add_days, new_limit } = req.body || {};
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -105,14 +106,20 @@ export default async function handler(req, res) {
             if (rows.length === 0) return res.status(404).json({ status: false, message: "Key tidak ditemukan" });
 
             const keyData = rows[0];
-            let currentExpired = new Date(keyData.expired_at).getTime();
-            const now = Date.now();
+            const currentExpiredMs = new Date(keyData.expired_at).getTime();
+            const nowMs = Date.now(); // Tanggal sekarang (28 Juli 2026)
 
-            // Jika sudah expired, hitung dari sekarang. Jika belum, tambahkan ke tanggal kadaluarsa saat ini.
-            let baseTime = currentExpired < now ? now : currentExpired;
-            let addedMs = (parseInt(add_days) || 0) * 24 * 60 * 60 * 1000;
+            const daysToAdd = parseInt(add_days) || 0;
+            const addedMs = daysToAdd * 24 * 60 * 60 * 1000;
+
+            // Jika sudah expired, patokan hitungan mulai dari WAKTU SEKARANG.
+            // Jika belum expired, tambahkan dari TANGGAL EXPIRATION LAMA.
+            let baseTime = currentExpiredMs < nowMs ? nowMs : currentExpiredMs;
             let newExpiredAt = new Date(baseTime + addedMs);
-            let updatedDays = keyData.active_days + (parseInt(add_days) || 0);
+
+            // Perhitungan Sisa Hari Akurat (Mencegah Angka 130+ Hari Membengkak)
+            let remainingMs = newExpiredAt.getTime() - nowMs;
+            let updatedDays = Math.max(1, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
             let updatedLimit = parseInt(new_limit) || keyData.device_limit;
 
             await sql`
@@ -169,7 +176,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, data: keys });
         }
 
-        // VALIDASI POST (HTTP INJECTOR / GAME GUARDIAN)
+        // VALIDASI POST (HTTP INJECTOR / GAME GUARDIAN / CLIENT APP)
         if (req.method === 'POST') {
             const apiKey = req.body?.key || req.body?.api_key;
             const hwid = req.body?.hwid || req.body?.device_id || 'UNKNOWN_DEVICE';

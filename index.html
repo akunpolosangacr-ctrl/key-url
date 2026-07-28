@@ -66,7 +66,7 @@
         .badge-expired { background-color: rgba(239, 68, 68, 0.15); color: var(--danger-color); border: 1px solid rgba(239, 68, 68, 0.3); }
         .badge-device { background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); border: 1px solid rgba(56, 189, 248, 0.3); }
 
-        /* Smooth Taskbar Blur Modal di Tengah Screen */
+        /* Smooth Center Blur Modal */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(11, 15, 25, 0.75);
@@ -255,9 +255,13 @@ async function loadKeysFromDatabase() {
             try { hwids = JSON.parse(k.hwid_list || '[]'); } catch(e) {}
             const deviceLimit = k.device_limit || 1;
 
+            // Perhitungan Tepat Sisa Hari
+            let remainingMs = new Date(k.expired_at).getTime() - now;
+            let remainingDays = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
+
             const statusBadge = isExpired 
                 ? `<span class="badge badge-expired">EXPIRED</span>` 
-                : `<span class="badge badge-active">AKTIF (${k.active_days} Hari)</span>`;
+                : `<span class="badge badge-active">AKTIF (${remainingDays} Hari)</span>`;
             
             const deviceBadge = `<span class="badge badge-device">📱 ${hwids.length}/${deviceLimit} Limit</span>`;
 
@@ -316,7 +320,6 @@ async function createNewKey() {
     }
 }
 
-// TAP DEVICES -> FETCH DETAIL LANGSUNG VIA API BIAR GAK CRASH/MACET
 async function openHwidModal(id) {
     activeModalKeyId = id;
     const container = document.getElementById("modalHwidList");
@@ -340,10 +343,10 @@ async function openHwidModal(id) {
         } else {
             container.innerHTML = hwids.map(h => `
                 <div class="hwid-item">
-                    <span>${escapeHtml(h)}</span>
+                    <span>📱 ${escapeHtml(h)}</span>
                     <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="removeSingleHwid('${escapeHtml(h)}')">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        Hapus
+                        Unlink
                     </button>
                 </div>
             `).join("");
