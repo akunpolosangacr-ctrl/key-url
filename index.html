@@ -48,7 +48,6 @@
         .badge-device { background-color: rgba(56, 189, 248, 0.2); color: var(--accent-color); }
         .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; display: none; z-index: 1000; }
         
-        /* Modal Backdrop Blur */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(15, 23, 42, 0.75);
@@ -122,7 +121,6 @@
     </div>
 </div>
 
-<!-- Modal Reset HWID dengan Background Blur -->
 <div class="modal-overlay" id="hwidModal">
     <div class="modal-card">
         <div class="modal-header">
@@ -166,7 +164,8 @@ async function loadKeysFromDatabase() {
 
         container.innerHTML = keys.map(k => {
             const isExpired = new Date(k.expired_at).getTime() < now;
-            const hwids = JSON.parse(k.hwid_list || '[]');
+            let hwids = [];
+            try { hwids = JSON.parse(k.hwid_list || '[]'); } catch(e) {}
             const deviceLimit = k.device_limit || 1;
 
             const statusBadge = isExpired ? `<span class="badge badge-expired">EXPIRED</span>` : `<span class="badge badge-active">AKTIF (${k.active_days} Hari)</span>`;
@@ -181,7 +180,7 @@ async function loadKeysFromDatabase() {
                 </div>
                 <div class="action-row">
                     <button class="btn btn-secondary" onclick="copyKeyToClipboard('${k.key_value}')">📋 Copy</button>
-                    <button class="btn btn-warning" onclick="openHwidModal(${k.id}, '${escapeHtml(k.label)}', '${k.hwid_list}')">📱 HWID</button>
+                    <button class="btn btn-warning" onclick="openHwidModal(${k.id}, '${escapeHtml(k.label)}', '${escapeHtml(k.hwid_list || '[]')}')">📱 HWID</button>
                     <button class="btn btn-danger" onclick="deleteKey(${k.id})">🗑️ Hapus</button>
                 </div>
             </div>`;
@@ -220,7 +219,8 @@ async function createNewKey() {
 
 function openHwidModal(id, label, hwidListJson) {
     activeModalKeyId = id;
-    const hwids = JSON.parse(hwidListJson || '[]');
+    let hwids = [];
+    try { hwids = JSON.parse(hwidListJson || '[]'); } catch(e) {}
     const container = document.getElementById("modalHwidList");
 
     if (hwids.length === 0) {
@@ -260,7 +260,7 @@ async function removeSingleHwid(targetHwid) {
 }
 
 async function resetAllHwidInModal() {
-    if (!activeModalKeyId || !confirm("Reset SEMUAH device terhubung untuk key ini?")) return;
+    if (!activeModalKeyId || !confirm("Reset SEMUA device terhubung untuk key ini?")) return;
     try {
         const res = await fetch(`${API_ENDPOINT}?action=reset_hwid`, {
             method: "POST",
