@@ -15,7 +15,6 @@ export default async function handler(req, res) {
     const sql = neon(dbUrl);
 
     try {
-        // Buat tabel jika belum ada
         await sql`
             CREATE TABLE IF NOT EXISTS api_keys (
                 id SERIAL PRIMARY KEY,
@@ -29,15 +28,12 @@ export default async function handler(req, res) {
             );
         `;
 
-        // FIX DB ERROR: Tambah kolom jika tabel lama belum punya kolom device_limit / hwid_list
         try {
             await sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS device_limit INT DEFAULT 1;`;
             await sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS hwid_list TEXT DEFAULT '[]';`;
-        } catch (e) {
-            // Ignore jika kolom sudah ada
-        }
+        } catch (e) {}
 
-        // 🔒 PROTECTED PAGE KEREN (JIKA DIBUKA DI BROWSER METHOD GET)
+        // PROTECTED PAGE UNTUK GET BROWSER
         if (req.method === 'GET' && !req.query.action) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(200).send(`
@@ -46,23 +42,23 @@ export default async function handler(req, res) {
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Protected</title>
+                    <title>Protected System</title>
                     <style>
-                        * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+                        * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
                         body { background-color: #0b0f19; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; padding: 20px; }
-                        .card { background-color: #111827; border: 1px solid #1e293b; border-radius: 20px; padding: 48px 32px; text-align: center; max-width: 380px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
-                        .icon-wrap { width: 72px; height: 72px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto; color: #ef4444; }
-                        h1 { font-size: 1.5rem; color: #f8fafc; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; }
-                        p { font-size: 0.88rem; color: #64748b; line-height: 1.6; }
+                        .card { background-color: #111827; border: 1px solid #1e293b; border-radius: 20px; padding: 48px 32px; text-align: center; max-width: 360px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+                        .icon-wrap { width: 64px; height: 64px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; color: #ef4444; }
+                        h1 { font-size: 1.4rem; color: #f8fafc; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; }
+                        p { font-size: 0.85rem; color: #64748b; line-height: 1.5; }
                     </style>
                 </head>
                 <body>
                     <div class="card">
                         <div class="icon-wrap">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                         </div>
                         <h1>PROTECTED</h1>
-                        <p>Access Restricted. System is encrypted and monitored.</p>
+                        <p>Access Restricted. System Encrypted.</p>
                     </div>
                 </body>
                 </html>
@@ -71,7 +67,7 @@ export default async function handler(req, res) {
 
         const action = req.query.action || req.body?.action;
 
-        // --- ACTION: CREATE KEY ---
+        // ACTION: CREATE KEY
         if (action === 'create') {
             const { label, days, custom_key, limit } = req.body || {};
             const activeDays = parseInt(days) || 30;
@@ -87,7 +83,7 @@ export default async function handler(req, res) {
 
             const checkExist = await sql`SELECT id FROM api_keys WHERE key_value = ${keyValue}`;
             if (checkExist.length > 0) {
-                return res.status(400).json({ status: false, message: "Key ini sudah terpakai! Gunakan key lain." });
+                return res.status(400).json({ status: false, message: "Key sudah terpakai di database!" });
             }
 
             const expiredAt = new Date(Date.now() + activeDays * 24 * 60 * 60 * 1000);
@@ -100,7 +96,37 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key tersimpan!", data: result[0] });
         }
 
-        // --- ACTION: DELETE KEY ---
+        // ACTION: UPDATE KEY (TAMBAH MASA AKTIF & LIMIT DEVICE)
+        if (action === 'update_key') {
+            const { id, add_days, new_limit } = req.body || {};
+            if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
+
+            const rows = await sql`SELECT expired_at, active_days, device_limit FROM api_keys WHERE id = ${id}`;
+            if (rows.length === 0) return res.status(404).json({ status: false, message: "Key tidak ditemukan" });
+
+            const keyData = rows[0];
+            let currentExpired = new Date(keyData.expired_at).getTime();
+            const now = Date.now();
+
+            // Jika sudah expired, hitung dari sekarang. Jika belum, tambahkan ke tanggal kadaluarsa saat ini.
+            let baseTime = currentExpired < now ? now : currentExpired;
+            let addedMs = (parseInt(add_days) || 0) * 24 * 60 * 60 * 1000;
+            let newExpiredAt = new Date(baseTime + addedMs);
+            let updatedDays = keyData.active_days + (parseInt(add_days) || 0);
+            let updatedLimit = parseInt(new_limit) || keyData.device_limit;
+
+            await sql`
+                UPDATE api_keys 
+                SET expired_at = ${newExpiredAt.toISOString()},
+                    active_days = ${updatedDays},
+                    device_limit = ${updatedLimit}
+                WHERE id = ${id}
+            `;
+
+            return res.status(200).json({ status: true, message: "Key berhasil diperbarui!" });
+        }
+
+        // ACTION: DELETE KEY
         if (action === 'delete') {
             const id = req.query.id || req.body?.id;
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -108,7 +134,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key terhapus" });
         }
 
-        // --- ACTION: RESET HWID DEVICE ---
+        // ACTION: RESET HWID DEVICE
         if (action === 'reset_hwid') {
             const { id, target_hwid } = req.body || req.query;
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -129,39 +155,39 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "HWID direset!", hwids });
         }
 
-        // --- ACTION: LIST KEYS ---
+        // ACTION: GET SINGLE KEY DETAILS
+        if (action === 'get_key') {
+            const id = req.query.id;
+            const rows = await sql`SELECT * FROM api_keys WHERE id = ${id}`;
+            if (rows.length === 0) return res.status(404).json({ status: false, message: "Data tidak ada" });
+            return res.status(200).json({ status: true, data: rows[0] });
+        }
+
+        // ACTION: LIST ALL KEYS
         if (action === 'list') {
             const keys = await sql`SELECT * FROM api_keys ORDER BY id DESC`;
             return res.status(200).json({ status: true, data: keys });
         }
 
-        // --- VALIDASI VIA HTTP POST (GAME GUARDIAN / MOD MENU) ---
+        // VALIDASI POST (HTTP INJECTOR / GAME GUARDIAN)
         if (req.method === 'POST') {
             const apiKey = req.body?.key || req.body?.api_key;
             const hwid = req.body?.hwid || req.body?.device_id || 'UNKNOWN_DEVICE';
 
-            if (!apiKey) {
-                return res.status(400).json({ status: false, valid: false, message: "API Key wajib diisi!" });
-            }
+            if (!apiKey) return res.status(400).json({ status: false, valid: false, message: "API Key wajib diisi!" });
 
             const rows = await sql`SELECT * FROM api_keys WHERE key_value = ${apiKey}`;
-            if (rows.length === 0) {
-                return res.status(404).json({ status: false, valid: false, message: "API Key tidak terdaftar!" });
-            }
+            if (rows.length === 0) return res.status(404).json({ status: false, valid: false, message: "API Key tidak terdaftar!" });
 
             const keyData = rows[0];
             const isExpired = new Date(keyData.expired_at).getTime() < Date.now();
-            if (isExpired) {
-                return res.status(403).json({ status: false, valid: false, message: "API Key telah kadaluarsa (Expired)!" });
-            }
+            if (isExpired) return res.status(403).json({ status: false, valid: false, message: "API Key telah KADALUARSA!" });
 
             let hwidList = [];
             try { hwidList = JSON.parse(keyData.hwid_list || '[]'); } catch (e) { hwidList = []; }
             const deviceLimit = keyData.device_limit || 1;
 
-            const isRegistered = hwidList.includes(hwid);
-
-            if (!isRegistered) {
+            if (!hwidList.includes(hwid)) {
                 if (hwidList.length >= deviceLimit) {
                     return res.status(403).json({
                         status: false,
