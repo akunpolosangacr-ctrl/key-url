@@ -1,0 +1,125 @@
+import { neon } from '@neondatabase/serverless';
+
+export default async function handler(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    // Ambil Connection String dari Vercel Environment Variable
+    const dbUrl = process.env.STORAGE_URL || process.env.DATABASE_URL;
+
+    if (!dbUrl) {
+        return res.status(500).json({
+            status: false,
+            message: "Database URL tidak ditemukan! Pastikan Integration Neon sudah terhubung di Vercel."
+        });
+    }
+
+    const sql = neon(dbUrl);
+
+    try {
+        // Otomatis buat tabel jika belum ada
+        await sql`
+            CREATE TABLE IF NOT EXISTS api_keys (
+                id SERIAL PRIMARY KEY,
+                label VARCHAR(255) NOT NULL,
+                key_value VARCHAR(255) UNIQUE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expired_at TIMESTAMP NOT NULL,
+                active_days INT NOT NULL
+            );
+        `;
+
+        const action = req.query.action || req.body?.action;
+
+        // --- ACTION 1: CREATE KEY ---
+        if (req.method === 'POST' || action === 'create') {
+            const { label, days } = req.body || req.query;
+            const activeDays = parseInt(days) || 30;
+            const keyLabel = label || 'Untitled Key';
+
+            // Generate Random Key Value (vdb_...)
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let keyValue = 'vdb_';
+            for (let i = 0; i < 32; i++) {
+                keyValue += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
+            const expiredAt = new Date(Date.now() + activeDays * 24 * 60 * 60 * 1000);
+
+            const result = await sql`
+                INSERT INTO api_keys (label, key_value, expired_at, active_days)
+                VALUES (${keyLabel}, ${keyValue}, ${expiredAt.toISOString()}, ${activeDays})
+                RETURNING *;
+            `;
+
+            return res.status(200).json({
+                status: true,
+                message: "API Key berhasil disimpan ke Neon DB!",
+                data: result[0]
+            });
+        }
+
+        // --- ACTION 2: DELETE KEY ---
+        if (req.method === 'DELETE' || action === 'delete') {
+            const id = req.query.id || req.body?.id;
+            if (!id) return res.status(400).json({ status: false, message: "ID diperlukan untuk hapus key" });
+
+            await sql`DELETE FROM api_keys WHERE id = ${id}`;
+            return res.status(200).json({ status: true, message: "Key berhasil dihapus dari DB" });
+        }
+
+        // --- ACTION 3: VALIDASI KEY (JIKA ADA PARAMETER ?key=...) ---
+        const { key } = req.query;
+
+        if (key && !action) {
+            const rows = await sql`SELECT * FROM api_keys WHERE key_value = ${key}`;
+
+            if (rows.length === 0) {
+                return res.status(404).json({
+                    status: false,
+                    valid: false,
+                    message: "API Key tidak ditemukan / tidak terdaftar!"
+                });
+            }
+
+            const keyData = rows[0];
+            const isExpired = new Date(keyData.expired_at).getTime() < Date.now();
+
+            if (isExpired) {
+                return res.status(403).json({
+                    status: false,
+                    valid: false,
+                    message: "API Key sudah KADALUARSA (Expired)!",
+                    expiredAt: keyData.expired_at
+                });
+            }
+
+            return res.status(200).json({
+                status: true,
+                valid: true,
+                message: "API Key Valid dan Aktif!",
+                label: keyData.label,
+                expiredAt: keyData.expired_at
+            });
+        }
+
+        // --- ACTION 4: GET ALL KEYS (LIST UNTUK FRONTEND) ---
+        const keys = await sql`SELECT * FROM api_keys ORDER BY id DESC`;
+        return res.status(200).json({
+            status: true,
+            total: keys.length,
+            data: keys
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            message: "Database Error: " + error.message
+        });
+    }
+}

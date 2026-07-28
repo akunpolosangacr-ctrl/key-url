@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Key URL Manager</title>
+    <title>Key URL Manager (Neon DB)</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -16,8 +16,8 @@
             --success-color: #22c55e;
             --danger-color: #ef4444;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); padding: 20px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
         .container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 20px; }
         header, .card { background-color: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); }
         header h1 { font-size: 1.6rem; color: var(--accent-color); margin-bottom: 6px; text-align: center; }
@@ -25,7 +25,7 @@
         .card h2 { font-size: 1.2rem; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; color: var(--accent-color); }
         .form-group { margin-bottom: 14px; }
         label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted); }
-        input[type="text"], input[type="password"] { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background-color: #0f172a; color: var(--text-color); font-size: 0.9rem; outline: none; }
+        input[type="text"], input[type="password"], input[type="number"] { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background-color: #0f172a; color: var(--text-color); font-size: 0.9rem; outline: none; }
         input:focus { border-color: var(--accent-color); }
         .btn { background-color: var(--accent-color); color: #0f172a; font-weight: 600; padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn:hover { background-color: var(--accent-hover); }
@@ -37,22 +37,24 @@
         .key-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
         .key-item { background-color: #0f172a; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .key-info { display: flex; flex-direction: column; gap: 4px; word-break: break-all; }
-        .key-name { font-weight: 600; color: var(--text-color); }
         .key-value { font-family: monospace; color: var(--accent-color); font-size: 0.85rem; }
         .key-date { font-size: 0.75rem; color: var(--text-muted); }
-        .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; display: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; width: fit-content; }
+        .badge-active { background-color: rgba(34, 197, 94, 0.2); color: var(--success-color); }
+        .badge-expired { background-color: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
+        .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; display: none; z-index: 1000; }
         @media (max-width: 600px) { .key-item, .url-box { flex-direction: column; align-items: stretch; } .btn { width: 100%; } }
     </style>
 </head>
 <body>
 <div class="container">
     <header>
-        <h1>🔑 Key URL Manager</h1>
-        <p>Kelola API Key, Admin Key, dan Database Vercel URL dalam satu dashboard.</p>
+        <h1>🔑 Key URL Manager (Neon DB)</h1>
+        <p>Kelola API Key & Validasi terhubung langsung ke Neon Postgres Database.</p>
     </header>
 
     <div class="card">
-        <h2>🌐 Vercel Database URL / Endpoint</h2>
+        <h2>🌐 Vercel API Validation Endpoint</h2>
         <div class="url-box">
             <span class="url-text" id="vercelUrl">Loading...</span>
             <button class="btn btn-secondary" onclick="copyVercelUrl()">📋 Copy URL</button>
@@ -60,31 +62,139 @@
     </div>
 
     <div class="card">
-        <h2>🔒 Admin API Key Login</h2>
-        <div class="form-group">
-            <label for="adminKeyInput">Master Admin API Key:</label>
-            <input type="password" id="adminKeyInput" placeholder="Masukkan Master Admin API Key...">
-        </div>
-        <div class="action-row">
-            <button class="btn" onclick="saveAdminKey()">💾 Simpan Key</button>
-            <button class="btn btn-secondary" onclick="toggleShowAdminKey()">👁️ Lihat / Sembunyikan</button>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>🔑 Generate Key Baru</h2>
+        <h2>🔑 Generate Key Baru ke Neon DB</h2>
         <div class="form-group">
             <label for="keyLabel">Label Key:</label>
-            <input type="text" id="keyLabel" placeholder="Nama / Deskripsi Key (contoh: App Client Key)...">
+            <input type="text" id="keyLabel" placeholder="Nama Key (contoh: App Premium User)">
+        </div>
+        <div class="form-group">
+            <label for="keyDays">Masa Aktif (Hari):</label>
+            <input type="number" id="keyDays" value="30" min="1" placeholder="Durasi aktif dalam hari">
         </div>
         <div class="action-row">
-            <button class="btn" onclick="createNewKey()">✨ Generate Key Baru</button>
+            <button class="btn" onclick="createNewKey()">✨ Generate & Simpan Ke DB</button>
         </div>
-        <h2 style="margin-top: 20px;">📋 Daftar Key Terdaftar</h2>
-        <div id="keyList" class="key-list"></div>
+
+        <h2 style="margin-top: 20px;">📋 Daftar Key di Database Neon</h2>
+        <div id="keyList" class="key-list">Memuat data dari database...</div>
     </div>
 </div>
+
 <div id="toast" class="toast">Berhasil disalin!</div>
-<script src="connect.js"></script>
+
+<script>
+const API_ENDPOINT = "/api/connect";
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("vercelUrl").innerText = window.location.origin + "/api/connect?key=YOUR_KEY";
+    loadKeysFromDatabase();
+});
+
+function copyVercelUrl() {
+    navigator.clipboard.writeText(document.getElementById("vercelUrl").innerText).then(() => {
+        showToast("✅ API Validation URL disalin!");
+    });
+}
+
+async function loadKeysFromDatabase() {
+    const container = document.getElementById("keyList");
+    try {
+        const res = await fetch(API_ENDPOINT);
+        const result = await res.json();
+
+        if (!result.status) {
+            container.innerHTML = `<p style="color: var(--danger-color); text-align: center;">${result.message}</p>`;
+            return;
+        }
+
+        const keys = result.data;
+        if (keys.length === 0) {
+            container.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 10px;">Belum ada key di database.</p>`;
+            return;
+        }
+
+        const now = new Date().getTime();
+
+        container.innerHTML = keys.map(k => {
+            const isExpired = new Date(k.expired_at).getTime() < now;
+            const statusBadge = isExpired 
+                ? `<span class="badge badge-expired">EXPIRED</span>` 
+                : `<span class="badge badge-active">AKTIF (${k.active_days} Hari)</span>`;
+
+            return `
+            <div class="key-item">
+                <div class="key-info">
+                    <div><strong>${escapeHtml(k.label)}</strong> ${statusBadge}</div>
+                    <span class="key-value">${k.key_value}</span>
+                    <span class="key-date">Kadaluarsa: ${new Date(k.expired_at).toLocaleString("id-ID")}</span>
+                </div>
+                <div class="action-row">
+                    <button class="btn btn-secondary" onclick="copyKeyToClipboard('${k.key_value}')">📋 Copy</button>
+                    <button class="btn btn-danger" onclick="deleteKey(${k.id})">🗑️ Hapus</button>
+                </div>
+            </div>
+            `;
+        }).join("");
+    } catch (err) {
+        container.innerHTML = `<p style="color: var(--danger-color); text-align: center;">Gagal terhubung ke server / DB</p>`;
+    }
+}
+
+async function createNewKey() {
+    const label = document.getElementById("keyLabel").value.trim() || "Untitled Key";
+    const days = parseInt(document.getElementById("keyDays").value) || 30;
+
+    showToast("Mengirim ke Database...");
+
+    try {
+        const res = await fetch(API_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "create", label: label, days: days })
+        });
+        const result = await res.json();
+
+        if (result.status) {
+            document.getElementById("keyLabel").value = "";
+            showToast("✨ Key berhasil tersimpan di DB!");
+            loadKeysFromDatabase();
+        } else {
+            alert("Gagal: " + result.message);
+        }
+    } catch (e) {
+        alert("Gagal menyimpan key ke Database.");
+    }
+}
+
+async function deleteKey(id) {
+    if (!confirm("Hapus key ini dari Database Neon?")) return;
+
+    try {
+        const res = await fetch(`${API_ENDPOINT}?action=delete&id=${id}`, { method: "DELETE" });
+        const result = await res.json();
+        if (result.status) {
+            showToast("🗑️ Key dihapus dari DB!");
+            loadKeysFromDatabase();
+        }
+    } catch (e) {
+        alert("Gagal menghapus key.");
+    }
+}
+
+function copyKeyToClipboard(val) {
+    navigator.clipboard.writeText(val).then(() => showToast("📋 Key disalin!"));
+}
+
+function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.innerText = msg;
+    t.style.display = "block";
+    setTimeout(() => { t.style.display = "none"; }, 3000);
+}
+
+function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+</script>
 </body>
 </html>

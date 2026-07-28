@@ -2,6 +2,10 @@
   "version": 2,
   "routes": [
     {
+      "src": "/api/connect",
+      "dest": "/api/connect.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
