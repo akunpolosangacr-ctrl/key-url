@@ -56,6 +56,22 @@
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
+        /* LOCK SCREEN OVERLAY */
+        #lockScreen {
+            position: fixed; inset: 0; background: #0b0f19; z-index: 8000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .lock-card {
+            background-color: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 20px; padding: 32px 24px; text-align: center; max-width: 360px; width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 16px;
+        }
+        .lock-icon {
+            width: 60px; height: 60px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: var(--accent-color);
+        }
+
         header, .card {
             background-color: var(--card-bg);
             padding: 20px;
@@ -140,7 +156,7 @@
 
         .form-group { margin-bottom: 12px; }
         label { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.82rem; color: var(--text-muted); }
-        input[type="text"], input[type="number"] { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--card-border); background-color: #0b0f19; color: var(--text-main); font-size: 0.88rem; transition: border-color 0.2s; }
+        input[type="text"], input[type="number"], input[type="password"] { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--card-border); background-color: #0b0f19; color: var(--text-main); font-size: 0.88rem; transition: border-color 0.2s; }
         input:focus { border-color: var(--accent-color); }
 
         .btn { background-color: var(--accent-color); color: #0b0f19; font-weight: 600; padding: 10px 14px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.85rem; width: 100%; }
@@ -212,6 +228,20 @@
     <p style="margin-top: 12px; font-size: 0.82rem; color: var(--accent-color); font-weight: 600;">MEMUAT SYSTEM...</p>
 </div>
 
+<!-- LOCK SCREEN (SYSTEM LOCKED) -->
+<div id="lockScreen">
+    <div class="lock-card">
+        <div class="lock-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <h2 style="font-size:1.2rem; color:#fff;">SYSTEM LOCKED</h2>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:-8px;">Masukkan PIN/Passcode Admin untuk Membuka Dashboard</p>
+        <input type="password" id="adminPinInput" placeholder="Masukkan PIN Admin..." style="text-align:center; font-size:1.1rem; letter-spacing:3px;">
+        <p id="lockErrorMsg" style="font-size:0.78rem; color:var(--danger-color); display:none;"></p>
+        <button class="btn" onclick="unlockDashboard()">Unlock System</button>
+    </div>
+</div>
+
 <div class="drawer-overlay" id="leftDrawer" onclick="closeDrawer()">
     <div class="drawer-content" onclick="event.stopPropagation()">
         <div class="drawer-header">
@@ -234,6 +264,13 @@
             <span style="display:flex; align-items:center; gap:8px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                 Refresh Database
+            </span>
+        </div>
+
+        <div class="drawer-menu-item" onclick="lockOutAdmin()" style="border-color: rgba(239, 68, 68, 0.4); color: var(--danger-color);">
+            <span style="display:flex; align-items:center; gap:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Lock Dashboard
             </span>
         </div>
     </div>
@@ -344,10 +381,16 @@
 const API_ENDPOINT = "/api/connect";
 let activeModalKeyId = null;
 let activeDeleteKeyId = null;
+let savedAdminPin = sessionStorage.getItem("admin_pin") || "";
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("vercelUrl").innerText = window.location.origin + API_ENDPOINT;
-    loadKeysFromDatabase();
+    
+    if (savedAdminPin) {
+        verifyAndLoad();
+    } else {
+        showLockScreen();
+    }
 
     setTimeout(() => {
         const loader = document.getElementById("pageLoader");
@@ -355,6 +398,55 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => loader.style.visibility = "hidden", 300);
     }, 400);
 });
+
+function showLockScreen() {
+    document.getElementById("lockScreen").style.display = "flex";
+}
+
+function hideLockScreen() {
+    document.getElementById("lockScreen").style.display = "none";
+}
+
+async function unlockDashboard() {
+    const pin = document.getElementById("adminPinInput").value.trim();
+    if (!pin) return;
+    savedAdminPin = pin;
+    await verifyAndLoad();
+}
+
+function lockOutAdmin() {
+    sessionStorage.removeItem("admin_pin");
+    savedAdminPin = "";
+    showLockScreen();
+    closeDrawer();
+}
+
+async function fetchWithAdminAuth(url, options = {}) {
+    options.headers = options.headers || {};
+    options.headers["x-admin-key"] = savedAdminPin;
+    const res = await fetch(url, options);
+    if (res.status === 403) {
+        showLockScreen();
+        document.getElementById("lockErrorMsg").innerText = "PIN Admin Salah / Akses Ditolak!";
+        document.getElementById("lockErrorMsg").style.display = "block";
+        throw new Error("LOCKED");
+    }
+    return res;
+}
+
+async function verifyAndLoad() {
+    try {
+        const res = await fetchWithAdminAuth(`${API_ENDPOINT}?action=list`);
+        const result = await res.json();
+        if (result.status) {
+            sessionStorage.setItem("admin_pin", savedAdminPin);
+            hideLockScreen();
+            renderKeysList(result.data);
+        }
+    } catch(e) {
+        // Locked
+    }
+}
 
 function openDrawer() { document.getElementById("leftDrawer").classList.add("active"); }
 function closeDrawer() { document.getElementById("leftDrawer").classList.remove("active"); }
@@ -366,53 +458,57 @@ function copyVercelUrl() {
 async function loadKeysFromDatabase() {
     const container = document.getElementById("keyList");
     try {
-        const res = await fetch(`${API_ENDPOINT}?action=list`);
+        const res = await fetchWithAdminAuth(`${API_ENDPOINT}?action=list`);
         const result = await res.json();
         if (!result.status) return container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">${result.message}</p>`;
 
-        const keys = result.data;
-        if (!keys || keys.length === 0) return container.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:10px;">Belum ada key terdaftar.</p>`;
-
-        const now = new Date().getTime();
-
-        container.innerHTML = keys.map(k => {
-            const isExpired = new Date(k.expired_at).getTime() < now;
-            let hwids = [];
-            try { hwids = JSON.parse(k.hwid_list || '[]'); } catch(e) {}
-            const deviceLimit = k.device_limit || 1;
-
-            let remainingMs = new Date(k.expired_at).getTime() - now;
-            let remainingDays = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
-
-            const statusBadge = isExpired 
-                ? `<span class="badge badge-expired">EXPIRED</span>` 
-                : `<span class="badge badge-active">AKTIF (${remainingDays} Hari)</span>`;
-            
-            const deviceBadge = `<span class="badge badge-device">${hwids.length}/${deviceLimit} Devices</span>`;
-
-            return `
-            <div class="key-item">
-                <div>
-                    <div class="key-header-info">
-                        <span class="key-title">${escapeHtml(k.label)}</span>
-                    </div>
-                    <div class="badge-container">
-                        ${statusBadge}
-                        ${deviceBadge}
-                    </div>
-                    <span class="key-value">${k.key_value}</span>
-                    <span class="key-date">Kadaluarsa: ${new Date(k.expired_at).toLocaleString("id-ID")}</span>
-                </div>
-                <div class="key-actions-grid">
-                    <button class="btn btn-secondary" onclick="copyKeyToClipboard('${k.key_value}')">Copy</button>
-                    <button class="btn btn-warning" onclick="openHwidModal(${k.id})">Devices & Settings</button>
-                    <button class="btn btn-danger" onclick="openDeleteModal(${k.id})">Hapus</button>
-                </div>
-            </div>`;
-        }).join("");
+        renderKeysList(result.data);
     } catch (e) {
-        container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Error koneksi database</p>`;
+        container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Akses Terkunci</p>`;
     }
+}
+
+function renderKeysList(keys) {
+    const container = document.getElementById("keyList");
+    if (!keys || keys.length === 0) return container.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:10px;">Belum ada key terdaftar.</p>`;
+
+    const now = new Date().getTime();
+
+    container.innerHTML = keys.map(k => {
+        const isExpired = new Date(k.expired_at).getTime() < now;
+        let hwids = [];
+        try { hwids = JSON.parse(k.hwid_list || '[]'); } catch(e) {}
+        const deviceLimit = k.device_limit || 1;
+
+        let remainingMs = new Date(k.expired_at).getTime() - now;
+        let remainingDays = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
+
+        const statusBadge = isExpired 
+            ? `<span class="badge badge-expired">EXPIRED</span>` 
+            : `<span class="badge badge-active">AKTIF (${remainingDays} Hari)</span>`;
+        
+        const deviceBadge = `<span class="badge badge-device">${hwids.length}/${deviceLimit} Devices</span>`;
+
+        return `
+        <div class="key-item">
+            <div>
+                <div class="key-header-info">
+                    <span class="key-title">${escapeHtml(k.label)}</span>
+                </div>
+                <div class="badge-container">
+                    ${statusBadge}
+                    ${deviceBadge}
+                </div>
+                <span class="key-value">${k.key_value}</span>
+                <span class="key-date">Kadaluarsa: ${new Date(k.expired_at).toLocaleString("id-ID")}</span>
+            </div>
+            <div class="key-actions-grid">
+                <button class="btn btn-secondary" onclick="copyKeyToClipboard('${k.key_value}')">Copy</button>
+                <button class="btn btn-warning" onclick="openHwidModal(${k.id})">Devices & Settings</button>
+                <button class="btn btn-danger" onclick="openDeleteModal(${k.id})">Hapus</button>
+            </div>
+        </div>`;
+    }).join("");
 }
 
 async function createNewKey() {
@@ -423,7 +519,7 @@ async function createNewKey() {
 
     showToast("Mengirim ke Database...");
     try {
-        const res = await fetch(`${API_ENDPOINT}?action=create`, {
+        const res = await fetchWithAdminAuth(`${API_ENDPOINT}?action=create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ label, days, custom_key: customKey, limit })
@@ -445,7 +541,7 @@ async function openHwidModal(id) {
     document.getElementById("hwidModal").classList.add("active");
 
     try {
-        const res = await fetch(`${API_ENDPOINT}?action=get_key&id=${id}`);
+        const res = await fetchWithAdminAuth(`${API_ENDPOINT}?action=get_key&id=${id}`);
         const resData = await res.json();
         if (!resData.status) return alert("Gagal memuat detail key");
 
@@ -491,7 +587,7 @@ async function saveKeySettingsFromModal() {
     const newLimit = parseInt(document.getElementById("modalSetLimit").value) || 1;
 
     try {
-        const res = await fetch(`${API_ENDPOINT}?action=update_key`, {
+        const res = await fetchWithAdminAuth(`${API_ENDPOINT}?action=update_key`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: activeModalKeyId, add_days: addDays, new_limit: newLimit })
@@ -511,7 +607,7 @@ function closeModal(modalId) { document.getElementById(modalId).classList.remove
 async function removeSingleHwid(targetHwid) {
     if (!activeModalKeyId) return;
     try {
-        const res = await fetch(`${API_ENDPOINT}?action=reset_hwid`, {
+        const res = await fetchWithAdminAuth(`${API_ENDPOINT}?action=reset_hwid`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: activeModalKeyId, target_hwid: targetHwid })
@@ -528,7 +624,7 @@ async function removeSingleHwid(targetHwid) {
 async function resetAllHwidInModal() {
     if (!activeModalKeyId) return;
     try {
-        const res = await fetch(`${API_ENDPOINT}?action=reset_hwid`, {
+        const res = await fetchWithAdminAuth(`${API_ENDPOINT}?action=reset_hwid`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id: activeModalKeyId })
@@ -545,7 +641,7 @@ async function resetAllHwidInModal() {
 async function executeDeleteKey() {
     if (!activeDeleteKeyId) return;
     try {
-        const res = await fetch(`${API_ENDPOINT}?action=delete&id=${activeDeleteKeyId}`, { method: "DELETE" });
+        const res = await fetchWithAdminAuth(`${API_ENDPOINT}?action=delete&id=${activeDeleteKeyId}`, { method: "DELETE" });
         const result = await res.json();
         if (result.status) {
             showToast("Key terhapus!");

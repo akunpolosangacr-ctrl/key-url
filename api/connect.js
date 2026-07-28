@@ -3,7 +3,7 @@ import { neon } from '@neondatabase/serverless';
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-admin-key');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -13,6 +13,8 @@ export default async function handler(req, res) {
     }
 
     const sql = neon(dbUrl);
+    // PIN ADMIN RAHASIA (Bisa diatur di Environment Variables Vercel nama: ADMIN_PIN)
+    const ADMIN_PIN = process.env.ADMIN_PIN || "2049";
 
     try {
         await sql`
@@ -33,8 +35,20 @@ export default async function handler(req, res) {
             await sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS hwid_list TEXT DEFAULT '[]';`;
         } catch (e) {}
 
-        // PROTECTED PAGE UNTUK GET BROWSER DIRECT
-        if (req.method === 'GET' && !req.query.action) {
+        const action = req.query.action || req.body?.action;
+
+        // PROTEKSI ADMIN ACTION (Jika ada request action, wajib menggunakan x-admin-key)
+        if (action) {
+            const clientAdminKey = req.headers['x-admin-key'] || req.query.admin_key || req.body?.admin_key;
+            if (!clientAdminKey || clientAdminKey !== ADMIN_PIN) {
+                return res.status(403).json({ 
+                    status: false, 
+                    locked: true, 
+                    message: "LOCKED: Akses ditolak! PIN Admin salah atau tidak valid." 
+                });
+            }
+        } else if (req.method === 'GET') {
+            // Tampilan jika endpoint diakses langsung dari browser tanpa action
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(200).send(`
                 <!DOCTYPE html>
@@ -42,12 +56,12 @@ export default async function handler(req, res) {
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Protected System</title>
+                    <title>System Locked</title>
                     <style>
                         * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, sans-serif; }
                         body { background-color: #0b0f19; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; padding: 20px; }
                         .card { background-color: #111827; border: 1px solid #1e293b; border-radius: 20px; padding: 48px 32px; text-align: center; max-width: 360px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
-                        .icon-wrap { width: 64px; height: 64px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; color: #38bdf8; }
+                        .icon-wrap { width: 64px; height: 64px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; color: #ef4444; }
                         h1 { font-size: 1.3rem; color: #f8fafc; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; }
                         p { font-size: 0.85rem; color: #64748b; line-height: 1.5; }
                     </style>
@@ -57,15 +71,13 @@ export default async function handler(req, res) {
                         <div class="icon-wrap">
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                         </div>
-                        <h1>PROTECTED</h1>
+                        <h1>LOCKED</h1>
                         <p>Access Restricted. System Encrypted.</p>
                     </div>
                 </body>
                 </html>
             `);
         }
-
-        const action = req.query.action || req.body?.action;
 
         // ACTION: CREATE KEY
         if (action === 'create') {
@@ -172,7 +184,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, data: keys });
         }
 
-        // VALIDASI POST CLIENT APP (HANYA RESPONS: "Key successful")
+        // VALIDASI CLIENT APP (POST UNTUK APLIKASI USER)
         if (req.method === 'POST') {
             const apiKey = req.body?.key || req.body?.api_key;
             const rawHwid = req.body?.hwid || req.body?.device_id || 'UNKNOWN_DEVICE';
@@ -181,6 +193,7 @@ export default async function handler(req, res) {
 
             if (!apiKey) return res.status(400).json({ status: false, valid: false, message: "Key wajib diisi!" });
 
+            // Parameterized Query anti-SQL Injection
             const rows = await sql`SELECT * FROM api_keys WHERE key_value = ${apiKey}`;
             if (rows.length === 0) return res.status(404).json({ status: false, valid: false, message: "Key tidak terdaftar!" });
 
@@ -219,7 +232,6 @@ export default async function handler(req, res) {
                 await sql`UPDATE api_keys SET hwid_list = ${JSON.stringify(hwidList)} WHERE id = ${keyData.id}`;
             }
 
-            // DIBERSIHKAN: Hanya mengembalikan status valid & message "Key successful"
             return res.status(200).json({
                 status: true,
                 valid: true,
