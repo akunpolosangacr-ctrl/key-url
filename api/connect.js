@@ -14,7 +14,12 @@ export default async function handler(req, res) {
 
     const sql = neon(dbUrl);
 
+    // Dapatkan Real IP Pengunjung
+    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    const clientIp = rawIp.split(',')[0].trim();
+
     try {
+        // Auto Table Setup
         await sql`
             CREATE TABLE IF NOT EXISTS api_keys (
                 id SERIAL PRIMARY KEY,
@@ -27,14 +32,54 @@ export default async function handler(req, res) {
                 hwid_list TEXT DEFAULT '[]'
             );
         `;
+        await sql`
+            CREATE TABLE IF NOT EXISTS blocked_ips (
+                ip VARCHAR(100) PRIMARY KEY,
+                blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `;
+        await sql`
+            CREATE TABLE IF NOT EXISTS web_tracking_logs (
+                id SERIAL PRIMARY KEY,
+                ip VARCHAR(100) NOT NULL,
+                user_agent TEXT,
+                path TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `;
 
         try {
             await sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS device_limit INT DEFAULT 1;`;
             await sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS hwid_list TEXT DEFAULT '[]';`;
         } catch (e) {}
 
-        // PROTECTED PAGE UNTUK GET BROWSER
-        if (req.method === 'GET' && !req.query.action) {
+        // CEK STATS BLOKIR IP PENGUNJUNG
+        const checkBlocked = await sql`SELECT ip FROM blocked_ips WHERE ip = ${clientIp}`;
+        if (checkBlocked.length > 0) {
+            if (req.method === 'GET' && !req.query.action) {
+                res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                return res.status(403).send(`
+                    <!DOCTYPE html>
+                    <html lang="id">
+                    <head><meta charset="UTF-8"><title>IP Blocked</title>
+                    <style>body{background:#0b0f19;color:#ef4444;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;margin:0;}
+                    .box{border:1px solid #ef4444;padding:30px;border-radius:16px;text-align:center;background:#111827;}</style></head>
+                    <body><div class="box"><h1>🚫 ACCESS DENIED</h1><p>IP Anda (${clientIp}) telah diblokir oleh Administrator.</p></div></body>
+                    </html>
+                `);
+            }
+            return res.status(403).json({ status: false, message: `IP Anda (${clientIp}) diblokir!` });
+        }
+
+        const action = req.query.action || req.body?.action;
+
+        // CATAT TRACKING LOG JIKA AKSES DARI BROWSER UTAMA
+        if (req.method === 'GET' && !action) {
+            try {
+                const userAgent = req.headers['user-agent'] || 'Unknown';
+                await sql`INSERT INTO web_tracking_logs (ip, user_agent, path) VALUES (${clientIp}, ${userAgent}, ${req.url});`;
+            } catch (e) {}
+
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(200).send(`
                 <!DOCTYPE html>
@@ -65,7 +110,33 @@ export default async function handler(req, res) {
             `);
         }
 
-        const action = req.query.action || req.body?.action;
+        // ACTION: GET TRACKING LOGS
+        if (action === 'get_tracking') {
+            const logs = await sql`SELECT * FROM web_tracking_logs ORDER BY id DESC LIMIT 50`;
+            return res.status(200).json({ status: true, data: logs });
+        }
+
+        // ACTION: BLOCK IP
+        if (action === 'block_ip') {
+            const targetIp = req.query.ip || req.body?.ip;
+            if (!targetIp) return res.status(400).json({ status: false, message: "IP diperlukan" });
+            await sql`INSERT INTO blocked_ips (ip) VALUES (${targetIp}) ON CONFLICT DO NOTHING;`;
+            return res.status(200).json({ status: true, message: `IP ${targetIp} berhasil diblokir!` });
+        }
+
+        // ACTION: UNBLOCK IP
+        if (action === 'unblock_ip') {
+            const targetIp = req.query.ip || req.body?.ip;
+            if (!targetIp) return res.status(400).json({ status: false, message: "IP diperlukan" });
+            await sql`DELETE FROM blocked_ips WHERE ip = ${targetIp}`;
+            return res.status(200).json({ status: true, message: `IP ${targetIp} berhasil dibuka blokirnya!` });
+        }
+
+        // ACTION: GET BLOCKED IPS
+        if (action === 'get_blocked') {
+            const list = await sql`SELECT * FROM blocked_ips ORDER BY blocked_at DESC`;
+            return res.status(200).json({ status: true, data: list });
+        }
 
         // ACTION: CREATE KEY
         if (action === 'create') {
@@ -86,7 +157,6 @@ export default async function handler(req, res) {
                 return res.status(400).json({ status: false, message: "Key sudah terpakai di database!" });
             }
 
-            // Presisi 28 Juli 2026 + activeDays
             const expiredAt = new Date(Date.now() + activeDays * 24 * 60 * 60 * 1000);
 
             const result = await sql`
@@ -97,7 +167,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key tersimpan!", data: result[0] });
         }
 
-        // ACTION: UPDATE KEY (FIX BUG 130 HARI & MASA AKTIF AKURAT)
+        // ACTION: UPDATE KEY
         if (action === 'update_key') {
             const { id, add_days, new_limit } = req.body || {};
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -107,17 +177,14 @@ export default async function handler(req, res) {
 
             const keyData = rows[0];
             const currentExpiredMs = new Date(keyData.expired_at).getTime();
-            const nowMs = Date.now(); // Tanggal sekarang (28 Juli 2026)
+            const nowMs = Date.now();
 
             const daysToAdd = parseInt(add_days) || 0;
             const addedMs = daysToAdd * 24 * 60 * 60 * 1000;
 
-            // Jika sudah expired, patokan hitungan mulai dari WAKTU SEKARANG.
-            // Jika belum expired, tambahkan dari TANGGAL EXPIRATION LAMA.
             let baseTime = currentExpiredMs < nowMs ? nowMs : currentExpiredMs;
             let newExpiredAt = new Date(baseTime + addedMs);
 
-            // Perhitungan Sisa Hari Akurat (Mencegah Angka 130+ Hari Membengkak)
             let remainingMs = newExpiredAt.getTime() - nowMs;
             let updatedDays = Math.max(1, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
             let updatedLimit = parseInt(new_limit) || keyData.device_limit;
@@ -176,7 +243,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, data: keys });
         }
 
-        // VALIDASI POST (HTTP INJECTOR / GAME GUARDIAN / CLIENT APP)
+        // VALIDASI POST (CLIENT/BOT)
         if (req.method === 'POST') {
             const apiKey = req.body?.key || req.body?.api_key;
             const hwid = req.body?.hwid || req.body?.device_id || 'UNKNOWN_DEVICE';

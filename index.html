@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Key URL Manager</title>
+    <title>Key URL Manager & Security Admin</title>
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -19,20 +19,71 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; }
         .container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 20px; }
 
-        header, .card {
-            background-color: var(--card-bg);
-            padding: 24px;
-            border-radius: 16px;
-            border: 1px solid var(--card-border);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        /* LOADER OVERLAY */
+        #pageLoader {
+            position: fixed; inset: 0; background: #0b0f19; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+        .spinner-icon {
+            width: 54px; height: 54px; color: var(--accent-color);
+            animation: pulseSpin 1.4s ease-in-out infinite;
+        }
+        @keyframes pulseSpin {
+            0% { transform: scale(0.8) rotate(0deg); opacity: 0.6; }
+            50% { transform: scale(1.1) rotate(180deg); opacity: 1; }
+            100% { transform: scale(0.8) rotate(360deg); opacity: 0.6; }
         }
 
-        header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        header h1 { font-size: 1.5rem; color: var(--accent-color); display: flex; align-items: center; gap: 10px; font-weight: 700; }
-        header p { color: var(--text-muted); font-size: 0.88rem; }
+        header, .card {
+            background-color: var(--card-bg); padding: 24px; border-radius: 16px;
+            border: 1px solid var(--card-border); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        header { position: relative; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        header h1 { font-size: 1.4rem; color: var(--accent-color); display: flex; align-items: center; gap: 10px; font-weight: 700; }
+        header p { color: var(--text-muted); font-size: 0.85rem; }
+
+        /* MENU ICON LEFT TOP (-- / Hamburger) */
+        .menu-top-left {
+            position: absolute; top: 18px; left: 18px; background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--card-border); border-radius: 10px; color: var(--accent-color);
+            padding: 8px 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .menu-top-left:hover { background: var(--card-border); transform: scale(1.05); }
+
+        /* LEFT SIDEBAR DRAWER (SETENGAH DARI KIRI + BLUR) */
+        .drawer-overlay {
+            position: fixed; inset: 0; background: rgba(11, 15, 25, 0.65);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            z-index: 2000; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .drawer-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .drawer-content {
+            position: fixed; top: 0; left: 0; width: 80%; max-width: 340px; height: 100vh;
+            background: #0f172a; border-right: 1px solid var(--card-border);
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5); z-index: 2001;
+            padding: 24px; display: flex; flex-direction: column; gap: 18px;
+            transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow-y: auto;
+        }
+        .drawer-overlay.active .drawer-content { transform: translateX(0); }
+
+        .drawer-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); pb: 12px; padding-bottom: 12px; }
+        .drawer-header h3 { color: var(--accent-color); font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+        .drawer-menu-item {
+            padding: 12px 14px; border-radius: 10px; background: rgba(30, 41, 59, 0.5);
+            border: 1px solid var(--card-border); color: var(--text-main); font-size: 0.88rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+            transition: all 0.2s;
+        }
+        .drawer-menu-item:hover { background: var(--accent-color); color: #0b0f19; font-weight: 600; }
 
         .card h2 { font-size: 1.15rem; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; color: var(--accent-color); display: flex; align-items: center; gap: 8px; font-weight: 600; }
 
@@ -43,7 +94,6 @@
 
         .btn { background-color: var(--accent-color); color: #0b0f19; font-weight: 600; padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; }
         .btn:hover { background-color: var(--accent-hover); transform: translateY(-1px); }
-        .btn:active { transform: translateY(0); }
         .btn-secondary { background-color: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); }
         .btn-secondary:hover { background-color: rgba(56, 189, 248, 0.1); }
         .btn-warning { background-color: rgba(245, 158, 11, 0.15); border: 1px solid var(--warning-color); color: var(--warning-color); }
@@ -66,47 +116,84 @@
         .badge-expired { background-color: rgba(239, 68, 68, 0.15); color: var(--danger-color); border: 1px solid rgba(239, 68, 68, 0.3); }
         .badge-device { background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); border: 1px solid rgba(56, 189, 248, 0.3); }
 
-        /* Smooth Center Blur Modal */
+        /* MODAL TASKBAR TENGAH */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(11, 15, 25, 0.75);
+            position: fixed; inset: 0; background: rgba(11, 15, 25, 0.75);
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             display: flex; justify-content: center; align-items: center;
-            z-index: 1000; padding: 20px;
-            opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 3000; padding: 20px; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
-
         .modal-card {
             background-color: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 20px; padding: 24px; width: 100%; max-width: 480px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-            display: flex; flex-direction: column; gap: 16px;
+            border-radius: 20px; padding: 24px; width: 100%; max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 16px;
             transform: translateY(20px) scale(0.96); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .modal-overlay.active .modal-card { transform: translateY(0) scale(1); }
-
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; }
         .modal-header h3 { color: var(--accent-color); font-size: 1.1rem; display: flex; align-items: center; gap: 8px; font-weight: 600; }
         .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; transition: all 0.2s; }
         .close-btn:hover { background-color: rgba(239, 68, 68, 0.15); color: var(--danger-color); }
 
-        .hwid-item { background: #0b0f19; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 0.85rem; }
+        .log-item { background: #0b0f19; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--card-border); font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 12px 20px; border-radius: 10px; font-weight: 600; display: none; z-index: 4000; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
 
-        .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 12px 20px; border-radius: 10px; font-weight: 600; display: none; z-index: 1100; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-
-        svg { flex-shrink: 0; }
         @media (max-width: 600px) { .key-item, .url-box { flex-direction: column; align-items: stretch; } .btn { width: 100%; } }
     </style>
 </head>
 <body>
+
+<!-- INITIAL LOADER WITH ANIMATED ICON -->
+<div id="pageLoader">
+    <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+    </svg>
+    <p style="margin-top: 14px; font-size: 0.88rem; color: var(--accent-color); font-weight: 600; letter-spacing: 1px;">MEMUAT SYSTEM SECURITY...</p>
+</div>
+
+<!-- LEFT SIDEBAR DRAWER (SETENGAH KIRI + BLUR) -->
+<div class="drawer-overlay" id="leftDrawer" onclick="closeDrawer()">
+    <div class="drawer-content" onclick="event.stopPropagation()">
+        <div class="drawer-header">
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Security Menu
+            </h3>
+            <button class="close-btn" onclick="closeDrawer()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+
+        <div class="drawer-menu-item" onclick="openTrackingModal(); closeDrawer();">
+            <span>👁️ Web Tracking Logs</span>
+            <small style="color:var(--text-muted)">Tracking URL</small>
+        </div>
+
+        <div class="drawer-menu-item" onclick="openBlockedIpModal(); closeDrawer();">
+            <span>🚫 Blocked IP List</span>
+            <small style="color:var(--text-muted)">Manage Blokir</small>
+        </div>
+
+        <div class="drawer-menu-item" onclick="loadKeysFromDatabase(); closeDrawer();">
+            <span>🔄 Refresh Key Database</span>
+            <small style="color:var(--text-muted)">Sync</small>
+        </div>
+    </div>
+</div>
+
 <div class="container">
     <header>
+        <!-- ICON -- / HAMBURGER KIRI ATAS -->
+        <button class="menu-top-left" onclick="openDrawer()" title="Buka Menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="15" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+
         <h1>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
             Key URL Manager
         </h1>
-        <p>System Key & Multi-Device Control (Neon Postgres DB)</p>
+        <p>System Key & Multi-Device Security Control (Neon DB)</p>
     </header>
 
     <div class="card">
@@ -161,19 +248,13 @@
     </div>
 </div>
 
-<!-- Modal Taskbar Tengah Blur (Manage Device + Tambah Limit & Masa Aktif) -->
+<!-- MODAL DEVICE & SETTINGS EXPIRED -->
 <div class="modal-overlay" id="hwidModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                Manage Key Settings
-            </h3>
-            <button class="close-btn" onclick="closeModal('hwidModal')">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
+            <h3>📱 Manage Key Settings & Devices</h3>
+            <button class="close-btn" onclick="closeModal('hwidModal')">✕</button>
         </div>
-
         <div style="display: flex; gap: 10px;">
             <div style="flex: 1;">
                 <label>Tambah Masa Aktif (Hari):</label>
@@ -184,44 +265,57 @@
                 <input type="number" id="modalSetLimit" value="1" min="1">
             </div>
         </div>
-        <button class="btn btn-secondary" style="width: 100%;" onclick="saveKeySettingsFromModal()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path></svg>
-            Update Masa Aktif & Limit
-        </button>
+        <button class="btn btn-secondary" style="width: 100%;" onclick="saveKeySettingsFromModal()">Update Masa Aktif & Limit</button>
 
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">Daftar Device HWID terhubung:</p>
         <div id="modalHwidList" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto;"></div>
 
-        <div class="action-row">
-            <button class="btn btn-warning" style="width: 100%;" onclick="resetAllHwidInModal()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                Reset Semua Device HWID
-            </button>
+        <button class="btn btn-warning" style="width: 100%;" onclick="resetAllHwidInModal()">Reset Semua Device HWID</button>
+    </div>
+</div>
+
+<!-- MODAL WEB TRACKING LOGS -->
+<div class="modal-overlay" id="trackingModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>👁️ Web Tracking Logs (Pencoba URL Web)</h3>
+            <button class="close-btn" onclick="closeModal('trackingModal')">✕</button>
+        </div>
+        <div id="trackingLogsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
+            Memuat logs...
         </div>
     </div>
 </div>
 
-<!-- Modal Taskbar Tengah Confirm Delete -->
+<!-- MODAL BLOCKED IP LIST -->
+<div class="modal-overlay" id="blockedIpModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 style="color:var(--danger-color)">🚫 Logs IP Terblokir</h3>
+            <button class="close-btn" onclick="closeModal('blockedIpModal')">✕</button>
+        </div>
+        <div id="blockedIpsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
+            Memuat list IP terblokir...
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONFIRM DELETE KEY -->
 <div class="modal-overlay" id="deleteModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3 style="color: var(--danger-color);">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                Konfirmasi Hapus Key
-            </h3>
-            <button class="close-btn" onclick="closeModal('deleteModal')">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
+            <h3 style="color: var(--danger-color);">Konfirmasi Hapus Key</h3>
+            <button class="close-btn" onclick="closeModal('deleteModal')">✕</button>
         </div>
-        <p style="font-size: 0.9rem; color: var(--text-main);">Apakah Anda yakin ingin menghapus key ini dari Database secara permanen?</p>
-        <div class="action-row" style="margin-top: 10px;">
+        <p style="font-size: 0.9rem; color: var(--text-main);">Hapus key ini dari Database secara permanen?</p>
+        <div class="action-row">
             <button class="btn btn-secondary" style="flex: 1;" onclick="closeModal('deleteModal')">Batal</button>
-            <button class="btn btn-danger" style="flex: 1;" onclick="executeDeleteKey()">Hapus Key</button>
+            <button class="btn btn-danger" style="flex: 1;" onclick="executeDeleteKey()">Hapus</button>
         </div>
     </div>
 </div>
 
-<div id="toast" class="toast">Berhasil disalin!</div>
+<div id="toast" class="toast">Berhasil!</div>
 
 <script>
 const API_ENDPOINT = "/api/connect";
@@ -231,7 +325,17 @@ let activeDeleteKeyId = null;
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("vercelUrl").innerText = window.location.origin + API_ENDPOINT;
     loadKeysFromDatabase();
+
+    // SMOOTH HIDE INITIAL LOADER
+    setTimeout(() => {
+        const loader = document.getElementById("pageLoader");
+        loader.style.opacity = "0";
+        setTimeout(() => loader.style.visibility = "hidden", 500);
+    }, 800);
 });
+
+function openDrawer() { document.getElementById("leftDrawer").classList.add("active"); }
+function closeDrawer() { document.getElementById("leftDrawer").classList.remove("active"); }
 
 function copyVercelUrl() {
     navigator.clipboard.writeText(window.location.origin + API_ENDPOINT).then(() => showToast("✅ URL Copied!"));
@@ -255,7 +359,6 @@ async function loadKeysFromDatabase() {
             try { hwids = JSON.parse(k.hwid_list || '[]'); } catch(e) {}
             const deviceLimit = k.device_limit || 1;
 
-            // Perhitungan Tepat Sisa Hari
             let remainingMs = new Date(k.expired_at).getTime() - now;
             let remainingDays = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
 
@@ -273,18 +376,9 @@ async function loadKeysFromDatabase() {
                     <span class="key-date">Kadaluarsa: ${new Date(k.expired_at).toLocaleString("id-ID")}</span>
                 </div>
                 <div class="action-row">
-                    <button class="btn btn-secondary" onclick="copyKeyToClipboard('${k.key_value}')">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        Copy
-                    </button>
-                    <button class="btn btn-warning" onclick="openHwidModal(${k.id})">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                        Devices
-                    </button>
-                    <button class="btn btn-danger" onclick="openDeleteModal(${k.id})">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        Hapus
-                    </button>
+                    <button class="btn btn-secondary" onclick="copyKeyToClipboard('${k.key_value}')">Copy</button>
+                    <button class="btn btn-warning" onclick="openHwidModal(${k.id})">Devices & Settings</button>
+                    <button class="btn btn-danger" onclick="openDeleteModal(${k.id})">Hapus</button>
                 </div>
             </div>`;
         }).join("");
@@ -312,12 +406,8 @@ async function createNewKey() {
             document.getElementById("customKey").value = "";
             showToast("✨ Key tersimpan!");
             loadKeysFromDatabase();
-        } else {
-            alert("Gagal: " + result.message);
-        }
-    } catch (e) {
-        alert("Gagal menyimpan key.");
-    }
+        } else { alert("Gagal: " + result.message); }
+    } catch (e) { alert("Gagal menyimpan key."); }
 }
 
 async function openHwidModal(id) {
@@ -342,18 +432,79 @@ async function openHwidModal(id) {
             container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:10px;">Belum ada device terhubung.</p>`;
         } else {
             container.innerHTML = hwids.map(h => `
-                <div class="hwid-item">
+                <div class="log-item">
                     <span>📱 ${escapeHtml(h)}</span>
-                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="removeSingleHwid('${escapeHtml(h)}')">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        Unlink
-                    </button>
+                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="removeSingleHwid('${escapeHtml(h)}')">Unlink</button>
                 </div>
             `).join("");
         }
-    } catch(e) {
-        container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Gagal memuat devices.</p>`;
-    }
+    } catch(e) { container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Gagal memuat devices.</p>`; }
+}
+
+async function openTrackingModal() {
+    const container = document.getElementById("trackingLogsList");
+    container.innerHTML = `<p style="color:var(--text-muted); text-align:center;">Memuat web tracking logs...</p>`;
+    document.getElementById("trackingModal").classList.add("active");
+
+    try {
+        const res = await fetch(`${API_ENDPOINT}?action=get_tracking`);
+        const result = await res.json();
+        if (!result.status || !result.data.length) return container.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding:10px;">Belum ada log akses website.</p>`;
+
+        container.innerHTML = result.data.map(l => `
+            <div class="log-item">
+                <div>
+                    <div><strong>IP: ${escapeHtml(l.ip)}</strong></div>
+                    <div style="font-size:0.72rem; color:var(--text-muted);">${new Date(l.created_at).toLocaleString('id-ID')}</div>
+                </div>
+                <button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="blockIpAction('${escapeHtml(l.ip)}')">Blockir IP</button>
+            </div>
+        `).join("");
+    } catch(e) { container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Gagal memuat tracking logs.</p>`; }
+}
+
+async function openBlockedIpModal() {
+    const container = document.getElementById("blockedIpsList");
+    container.innerHTML = `<p style="color:var(--text-muted); text-align:center;">Memuat IP terblokir...</p>`;
+    document.getElementById("blockedIpModal").classList.add("active");
+
+    try {
+        const res = await fetch(`${API_ENDPOINT}?action=get_blocked`);
+        const result = await res.json();
+        if (!result.status || !result.data.length) return container.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding:10px;">Belum ada IP yang diblokir.</p>`;
+
+        container.innerHTML = result.data.map(b => `
+            <div class="log-item">
+                <div>
+                    <div><strong>🚫 ${escapeHtml(b.ip)}</strong></div>
+                    <div style="font-size:0.72rem; color:var(--text-muted);">${new Date(b.blocked_at).toLocaleString('id-ID')}</div>
+                </div>
+                <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.75rem;" onclick="unblockIpAction('${escapeHtml(b.ip)}')">Unblock IP</button>
+            </div>
+        `).join("");
+    } catch(e) { container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Gagal memuat list IP terblokir.</p>`; }
+}
+
+async function blockIpAction(ip) {
+    try {
+        const res = await fetch(`${API_ENDPOINT}?action=block_ip&ip=${ip}`);
+        const result = await res.json();
+        if (result.status) {
+            showToast(`🚫 IP ${ip} diblokir!`);
+            openTrackingModal();
+        }
+    } catch(e) { alert("Gagal memblokir IP."); }
+}
+
+async function unblockIpAction(ip) {
+    try {
+        const res = await fetch(`${API_ENDPOINT}?action=unblock_ip&ip=${ip}`);
+        const result = await res.json();
+        if (result.status) {
+            showToast(`✅ IP ${ip} dibuka blokir!`);
+            openBlockedIpModal();
+        }
+    } catch(e) { alert("Gagal membuka blokir IP."); }
 }
 
 async function saveKeySettingsFromModal() {
@@ -376,16 +527,8 @@ async function saveKeySettingsFromModal() {
     } catch(e) { alert("Gagal memperbarui settings."); }
 }
 
-function openDeleteModal(id) {
-    activeDeleteKeyId = id;
-    document.getElementById("deleteModal").classList.add("active");
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove("active");
-    if (modalId === 'hwidModal') activeModalKeyId = null;
-    if (modalId === 'deleteModal') activeDeleteKeyId = null;
-}
+function openDeleteModal(id) { activeDeleteKeyId = id; document.getElementById("deleteModal").classList.add("active"); }
+function closeModal(modalId) { document.getElementById(modalId).classList.remove("active"); }
 
 async function removeSingleHwid(targetHwid) {
     if (!activeModalKeyId) return;
