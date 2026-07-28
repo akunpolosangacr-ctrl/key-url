@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Key URL Manager Dashboard</title>
     <style>
         :root {
@@ -18,123 +18,194 @@
             --warning-color: #f59e0b;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; }
-        .container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 20px; }
+        /* RESET & DISABLE MOBIL TAP HIGHLIGHT KOTAK ABU/PUTIH */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent !important;
+            outline: none !important;
+        }
 
-        /* LOADER OVERLAY */
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* INITIAL LOADER OVERLAY */
         #pageLoader {
             position: fixed; inset: 0; background: #0b0f19; z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.4s ease, visibility 0.4s;
+            transition: opacity 0.3s ease, visibility 0.3s;
         }
         .spinner-icon {
-            width: 44px; height: 44px; color: var(--accent-color);
-            animation: spin 1.2s linear infinite;
+            width: 42px; height: 42px; color: var(--accent-color);
+            animation: spin 1s linear infinite;
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
+        /* CARDS & HEADER */
         header, .card {
-            background-color: var(--card-bg); padding: 24px; border-radius: 16px;
-            border: 1px solid var(--card-border); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
-        header { position: relative; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        header h1 { font-size: 1.4rem; color: var(--accent-color); display: flex; align-items: center; gap: 10px; font-weight: 700; }
-        header p { color: var(--text-muted); font-size: 0.85rem; }
-
-        .menu-top-left {
-            position: absolute; top: 18px; left: 18px; background: rgba(30, 41, 59, 0.6);
-            border: 1px solid var(--card-border); border-radius: 10px; color: var(--accent-color);
-            padding: 8px 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: background 0.2s;
+        /* HEADER FLEXBOX - NO OVERLAPPING */
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-        .menu-top-left:hover { background: var(--card-border); }
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
+        .menu-btn {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: var(--accent-color);
+            padding: 10px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .menu-btn:active {
+            transform: scale(0.95);
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--accent-color);
+        }
+        header h1 {
+            font-size: 1.25rem;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        header p {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-left: 48px;
+        }
 
         /* LEFT SIDEBAR DRAWER */
         .drawer-overlay {
-            position: fixed; inset: 0; background: rgba(11, 15, 25, 0.65);
+            position: fixed; inset: 0; background: rgba(11, 15, 25, 0.7);
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-            z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
         .drawer-overlay.active { opacity: 1; pointer-events: auto; }
 
         .drawer-content {
-            position: fixed; top: 0; left: 0; width: 78%; max-width: 320px; height: 100vh;
+            position: fixed; top: 0; left: 0; width: 80%; max-width: 300px; height: 100vh;
             background: #0f172a; border-right: 1px solid var(--card-border);
             box-shadow: 10px 0 30px rgba(0,0,0,0.5); z-index: 2001;
-            padding: 24px; display: flex; flex-direction: column; gap: 18px;
+            padding: 20px; display: flex; flex-direction: column; gap: 16px;
             transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             overflow-y: auto;
         }
         .drawer-overlay.active .drawer-content { transform: translateX(0); }
 
         .drawer-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; }
-        .drawer-header h3 { color: var(--accent-color); font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .drawer-header h3 { color: var(--accent-color); font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
         .drawer-menu-item {
             padding: 12px 14px; border-radius: 10px; background: rgba(30, 41, 59, 0.4);
-            border: 1px solid var(--card-border); color: var(--text-main); font-size: 0.88rem;
+            border: 1px solid var(--card-border); color: var(--text-main); font-size: 0.85rem;
             cursor: pointer; display: flex; align-items: center; justify-content: space-between;
-            transition: background 0.2s;
+            transition: all 0.2s ease;
         }
-        .drawer-menu-item:hover { background: rgba(56, 189, 248, 0.15); border-color: var(--accent-color); }
+        .drawer-menu-item:active { background: rgba(56, 189, 248, 0.15); border-color: var(--accent-color); }
 
-        .card h2 { font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; color: var(--accent-color); display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .card h2 { font-size: 1.05rem; margin-bottom: 14px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; color: var(--accent-color); display: flex; align-items: center; gap: 8px; font-weight: 600; }
 
-        .form-group { margin-bottom: 14px; }
-        label { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted); }
-        input[type="text"], input[type="number"] { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--card-border); background-color: #0b0f19; color: var(--text-main); font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+        .form-group { margin-bottom: 12px; }
+        label { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.82rem; color: var(--text-muted); }
+        input[type="text"], input[type="number"] { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--card-border); background-color: #0b0f19; color: var(--text-main); font-size: 0.88rem; transition: border-color 0.2s; }
         input:focus { border-color: var(--accent-color); }
 
-        .btn { background-color: var(--accent-color); color: #0b0f19; font-weight: 600; padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; }
-        .btn:hover { background-color: var(--accent-hover); }
+        /* BUTTONS */
+        .btn { background-color: var(--accent-color); color: #0b0f19; font-weight: 600; padding: 10px 14px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.85rem; width: 100%; }
+        .btn:active { transform: scale(0.98); background-color: var(--accent-hover); }
         .btn-secondary { background-color: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); }
-        .btn-secondary:hover { background-color: rgba(56, 189, 248, 0.1); }
-        .btn-warning { background-color: rgba(245, 158, 11, 0.15); border: 1px solid var(--warning-color); color: var(--warning-color); }
-        .btn-warning:hover { background-color: var(--warning-color); color: #0b0f19; }
-        .btn-danger { background-color: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger-color); color: var(--danger-color); }
-        .btn-danger:hover { background-color: var(--danger-color); color: #fff; }
+        .btn-secondary:active { background-color: rgba(56, 189, 248, 0.1); }
+        .btn-warning { background-color: rgba(245, 158, 11, 0.12); border: 1px solid var(--warning-color); color: var(--warning-color); }
+        .btn-warning:active { background-color: var(--warning-color); color: #0b0f19; }
+        .btn-danger { background-color: rgba(239, 68, 68, 0.12); border: 1px solid var(--danger-color); color: var(--danger-color); }
+        .btn-danger:active { background-color: var(--danger-color); color: #fff; }
 
-        .action-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .url-box { background-color: #0b0f19; padding: 14px; border-radius: 10px; border: 1px dashed var(--accent-color); display: flex; align-items: center; justify-content: space-between; gap: 10px; word-break: break-all; }
-        .url-text { font-family: monospace; color: var(--accent-color); font-size: 0.85rem; }
+        .action-row { display: flex; gap: 8px; width: 100%; }
+        .url-box { background-color: #0b0f19; padding: 12px; border-radius: 10px; border: 1px dashed var(--accent-color); display: flex; align-items: center; justify-content: space-between; gap: 10px; word-break: break-all; }
+        .url-text { font-family: monospace; color: var(--accent-color); font-size: 0.82rem; }
 
-        .key-list { margin-top: 14px; display: flex; flex-direction: column; gap: 12px; }
-        .key-item { background-color: #0b0f19; padding: 16px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-        .key-info { display: flex; flex-direction: column; gap: 6px; word-break: break-all; }
-        .key-value { font-family: monospace; color: var(--accent-color); font-size: 0.88rem; font-weight: 600; }
-        .key-date { font-size: 0.75rem; color: var(--text-muted); }
+        /* KEY LIST & ITEM */
+        .key-list { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+        .key-item { background-color: #0b0f19; padding: 14px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 12px; }
+        .key-header-info { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+        .key-title { font-weight: 700; font-size: 0.95rem; color: #fff; }
+        .key-value { font-family: monospace; color: var(--accent-color); font-size: 0.85rem; font-weight: 600; margin-top: 2px; display: block; }
+        .key-date { font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 4px; }
 
-        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+        .badge-container { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+        .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; }
         .badge-active { background-color: rgba(34, 197, 94, 0.15); color: var(--success-color); border: 1px solid rgba(34, 197, 94, 0.3); }
         .badge-expired { background-color: rgba(239, 68, 68, 0.15); color: var(--danger-color); border: 1px solid rgba(239, 68, 68, 0.3); }
         .badge-device { background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); border: 1px solid rgba(56, 189, 248, 0.3); }
+
+        .key-actions-grid { display: flex; gap: 6px; width: 100%; margin-top: 4px; }
+        .key-actions-grid .btn { flex: 1; padding: 8px 6px; font-size: 0.8rem; }
 
         /* MODAL TASKBAR TENGAH */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(11, 15, 25, 0.75);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             display: flex; justify-content: center; align-items: center;
-            z-index: 3000; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+            z-index: 3000; padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-card {
             background-color: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 20px; padding: 24px; width: 100%; max-width: 480px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 16px;
-            transform: scale(0.96); transition: transform 0.3s ease;
+            border-radius: 18px; padding: 20px; width: 100%; max-width: 440px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 14px;
+            transform: scale(0.96); transition: transform 0.25s ease;
         }
         .modal-overlay.active .modal-card { transform: scale(1); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; }
-        .modal-header h3 { color: var(--accent-color); font-size: 1.05rem; display: flex; align-items: center; gap: 8px; font-weight: 600; }
-        .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; }
-        .close-btn:hover { background-color: rgba(239, 68, 68, 0.15); color: var(--danger-color); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
+        .modal-header h3 { color: var(--accent-color); font-size: 1rem; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; font-size: 1.1rem; }
+        .close-btn:active { background-color: rgba(239, 68, 68, 0.15); color: var(--danger-color); }
 
-        .log-item { background: #0b0f19; padding: 12px; border-radius: 10px; border: 1px solid var(--card-border); font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-        .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 12px 20px; border-radius: 10px; font-weight: 600; display: none; z-index: 4000; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        .log-item { background: #0b0f19; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--card-border); font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 0.85rem; display: none; z-index: 4000; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
 
-        @media (max-width: 600px) { .key-item, .url-box { flex-direction: column; align-items: stretch; } .btn { width: 100%; } }
+        @media (max-width: 480px) {
+            header p { margin-left: 0; }
+            .url-box { flex-direction: column; align-items: stretch; }
+        }
     </style>
 </head>
 <body>
@@ -147,7 +218,7 @@
         <line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line>
         <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
     </svg>
-    <p style="margin-top: 14px; font-size: 0.85rem; color: var(--accent-color); font-weight: 600;">MEMUAT SYSTEM...</p>
+    <p style="margin-top: 12px; font-size: 0.82rem; color: var(--accent-color); font-weight: 600;">MEMUAT SYSTEM...</p>
 </div>
 
 <!-- LEFT SIDEBAR DRAWER -->
@@ -155,12 +226,10 @@
     <div class="drawer-content" onclick="event.stopPropagation()">
         <div class="drawer-header">
             <h3>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 Storage & System
             </h3>
-            <button class="close-btn" onclick="closeDrawer()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
+            <button class="close-btn" onclick="closeDrawer()">✕</button>
         </div>
 
         <div class="drawer-menu-item" style="cursor: default;">
@@ -181,32 +250,34 @@
 </div>
 
 <div class="container">
+    <!-- HEADER BAR BARU (RAPI, TIDAK SALING TIMPA) -->
     <header>
-        <button class="menu-top-left" onclick="openDrawer()" title="Menu">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="15" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-        </button>
-
-        <h1>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
-            Key URL Manager
-        </h1>
+        <div class="header-top">
+            <button class="menu-btn" onclick="openDrawer()" title="Menu">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="15" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <h1>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+                Key URL Manager
+            </h1>
+        </div>
         <p>System Key & Multi-Device Control (Neon DB)</p>
     </header>
 
     <div class="card">
         <h2>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             Vercel Validation Endpoint
         </h2>
         <div class="url-box">
             <span class="url-text" id="vercelUrl">Loading...</span>
-            <button class="btn btn-secondary" onclick="copyVercelUrl()">Copy URL</button>
+            <button class="btn btn-secondary" style="width: auto;" onclick="copyVercelUrl()">Copy URL</button>
         </div>
     </div>
 
     <div class="card">
         <h2>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Generate Key Baru
         </h2>
         <div class="form-group">
@@ -217,7 +288,7 @@
             <label for="customKey">Custom Key (Opsional - Kosongkan untuk Random vdb_...):</label>
             <input type="text" id="customKey" placeholder="Ketik Custom Key (contoh: MYKEY123)">
         </div>
-        <div class="form-group" style="display: flex; gap: 12px;">
+        <div class="form-group" style="display: flex; gap: 10px;">
             <div style="flex: 1;">
                 <label for="keyDays">Masa Aktif (Hari):</label>
                 <input type="number" id="keyDays" value="30" min="1">
@@ -227,12 +298,10 @@
                 <input type="number" id="deviceLimit" value="1" min="1">
             </div>
         </div>
-        <div class="action-row">
-            <button class="btn" onclick="createNewKey()">Generate & Simpan ke DB</button>
-        </div>
+        <button class="btn" onclick="createNewKey()">Generate & Simpan ke DB</button>
 
-        <h2 style="margin-top: 24px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        <h2 style="margin-top: 20px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
             Daftar Key & Devices di Database
         </h2>
         <div id="keyList" class="key-list">Memuat data...</div>
@@ -256,12 +325,12 @@
                 <input type="number" id="modalSetLimit" value="1" min="1">
             </div>
         </div>
-        <button class="btn btn-secondary" style="width: 100%;" onclick="saveKeySettingsFromModal()">Update Masa Aktif & Limit</button>
+        <button class="btn btn-secondary" onclick="saveKeySettingsFromModal()">Update Masa Aktif & Limit</button>
 
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">Daftar Device HWID Terhubung:</p>
-        <div id="modalHwidList" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto;"></div>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">Daftar Device HWID Terhubung:</p>
+        <div id="modalHwidList" style="display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto;"></div>
 
-        <button class="btn btn-warning" style="width: 100%;" onclick="resetAllHwidInModal()">Reset Semua Device HWID</button>
+        <button class="btn btn-warning" onclick="resetAllHwidInModal()">Reset Semua Device HWID</button>
     </div>
 </div>
 
@@ -272,10 +341,10 @@
             <h3 style="color: var(--danger-color);">Konfirmasi Hapus Key</h3>
             <button class="close-btn" onclick="closeModal('deleteModal')">✕</button>
         </div>
-        <p style="font-size: 0.9rem; color: var(--text-main);">Apakah Anda yakin ingin menghapus key ini dari Database secara permanen?</p>
+        <p style="font-size: 0.88rem; color: var(--text-main);">Apakah Anda yakin ingin menghapus key ini dari Database secara permanen?</p>
         <div class="action-row">
-            <button class="btn btn-secondary" style="flex: 1;" onclick="closeModal('deleteModal')">Batal</button>
-            <button class="btn btn-danger" style="flex: 1;" onclick="executeDeleteKey()">Hapus</button>
+            <button class="btn btn-secondary" onclick="closeModal('deleteModal')">Batal</button>
+            <button class="btn btn-danger" onclick="executeDeleteKey()">Hapus</button>
         </div>
     </div>
 </div>
@@ -294,8 +363,8 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
         const loader = document.getElementById("pageLoader");
         loader.style.opacity = "0";
-        setTimeout(() => loader.style.visibility = "hidden", 400);
-    }, 500);
+        setTimeout(() => loader.style.visibility = "hidden", 300);
+    }, 400);
 });
 
 function openDrawer() { document.getElementById("leftDrawer").classList.add("active"); }
@@ -334,12 +403,18 @@ async function loadKeysFromDatabase() {
 
             return `
             <div class="key-item">
-                <div class="key-info">
-                    <div><strong>${escapeHtml(k.label)}</strong> ${statusBadge} ${deviceBadge}</div>
+                <div>
+                    <div class="key-header-info">
+                        <span class="key-title">${escapeHtml(k.label)}</span>
+                    </div>
+                    <div class="badge-container">
+                        ${statusBadge}
+                        ${deviceBadge}
+                    </div>
                     <span class="key-value">${k.key_value}</span>
                     <span class="key-date">Kadaluarsa: ${new Date(k.expired_at).toLocaleString("id-ID")}</span>
                 </div>
-                <div class="action-row">
+                <div class="key-actions-grid">
                     <button class="btn btn-secondary" onclick="copyKeyToClipboard('${k.key_value}')">Copy</button>
                     <button class="btn btn-warning" onclick="openHwidModal(${k.id})">Devices & Settings</button>
                     <button class="btn btn-danger" onclick="openDeleteModal(${k.id})">Hapus</button>
@@ -393,12 +468,12 @@ async function openHwidModal(id) {
         try { hwids = JSON.parse(keyData.hwid_list || '[]'); } catch(e) {}
 
         if (hwids.length === 0) {
-            container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:10px;">Belum ada device terhubung.</p>`;
+            container.innerHTML = `<p style="color:var(--text-muted); font-size:0.82rem; text-align:center; padding:8px;">Belum ada device terhubung.</p>`;
         } else {
             container.innerHTML = hwids.map(h => `
                 <div class="log-item">
                     <span>${escapeHtml(h)}</span>
-                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="removeSingleHwid('${escapeHtml(h)}')">Unlink</button>
+                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem; width: auto;" onclick="removeSingleHwid('${escapeHtml(h)}')">Unlink</button>
                 </div>
             `).join("");
         }
@@ -483,7 +558,7 @@ function showToast(msg) {
     const t = document.getElementById("toast");
     t.innerText = msg;
     t.style.display = "block";
-    setTimeout(() => { t.style.display = "none"; }, 3000);
+    setTimeout(() => { t.style.display = "none"; }, 2500);
 }
 
 function escapeHtml(text) {

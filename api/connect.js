@@ -33,7 +33,7 @@ export default async function handler(req, res) {
             await sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS hwid_list TEXT DEFAULT '[]';`;
         } catch (e) {}
 
-        // PROTECTED PAGE UNTUK GET BROWSER TANPA QUERY ACTION
+        // PROTECTED PAGE UNTUK GET BROWSER Direct
         if (req.method === 'GET' && !req.query.action) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(200).send(`
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key tersimpan!", data: result[0] });
         }
 
-        // ACTION: UPDATE KEY (FIX EXPIRED ACCURACY)
+        // ACTION: UPDATE KEY
         if (action === 'update_key') {
             const { id, add_days, new_limit } = req.body || {};
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -172,7 +172,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, data: keys });
         }
 
-        // VALIDASI POST CLIENT APP (VALIDASI SESUAI PERMINTAAN)
+        // VALIDASI POST CLIENT APP (TULISAN Sesuai Request)
         if (req.method === 'POST') {
             const apiKey = req.body?.key || req.body?.api_key;
             const hwid = req.body?.hwid || req.body?.device_id || 'UNKNOWN_DEVICE';
