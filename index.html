@@ -53,7 +53,7 @@
 <div class="container">
     <header>
         <h1>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
             Key URL Manager
         </h1>
         <p>Manajemen Validasi Key Terhubung ke Neon Postgres Database.</p>
@@ -61,7 +61,7 @@
 
     <div class="card">
         <h2>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             Vercel Validation Endpoint
         </h2>
         <div class="url-box">
@@ -79,8 +79,12 @@
             Generate Key Baru
         </h2>
         <div class="form-group">
-            <label for="keyLabel">Label Key:</label>
-            <input type="text" id="keyLabel" placeholder="Nama Key (contoh: User HTTP Injector)">
+            <label for="keyLabel">Label Key / User:</label>
+            <input type="text" id="keyLabel" placeholder="Nama Key (contoh: User HTTP Injector / GG)">
+        </div>
+        <div class="form-group">
+            <label for="customKey">Custom Key (Opsional - Kosongkan jika ingin Random Key vdb_...):</label>
+            <input type="text" id="customKey" placeholder="Ketik Key yang Kamu Mau (contoh: MYKEY123)">
         </div>
         <div class="form-group">
             <label for="keyDays">Masa Aktif (Hari):</label>
@@ -169,6 +173,7 @@ async function loadKeysFromDatabase() {
 
 async function createNewKey() {
     const label = document.getElementById("keyLabel").value.trim() || "Untitled Key";
+    const customKey = document.getElementById("customKey").value.trim();
     const days = parseInt(document.getElementById("keyDays").value) || 30;
 
     showToast("Mengirim ke Database...");
@@ -177,12 +182,13 @@ async function createNewKey() {
         const res = await fetch(`${API_ENDPOINT}?action=create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ label: label, days: days })
+            body: JSON.stringify({ label: label, days: days, custom_key: customKey })
         });
         const result = await res.json();
 
         if (result.status) {
             document.getElementById("keyLabel").value = "";
+            document.getElementById("customKey").value = "";
             showToast("✨ Key berhasil tersimpan di DB!");
             loadKeysFromDatabase();
         } else {
