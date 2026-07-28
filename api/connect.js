@@ -19,7 +19,6 @@ export default async function handler(req, res) {
     const clientIp = rawIp.split(',')[0].trim();
 
     try {
-        // Auto Table Setup
         await sql`
             CREATE TABLE IF NOT EXISTS api_keys (
                 id SERIAL PRIMARY KEY,
@@ -53,7 +52,7 @@ export default async function handler(req, res) {
             await sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS hwid_list TEXT DEFAULT '[]';`;
         } catch (e) {}
 
-        // CEK STATS BLOKIR IP PENGUNJUNG
+        // CEK STATUS BLOKIR IP
         const checkBlocked = await sql`SELECT ip FROM blocked_ips WHERE ip = ${clientIp}`;
         if (checkBlocked.length > 0) {
             if (req.method === 'GET' && !req.query.action) {
@@ -64,7 +63,7 @@ export default async function handler(req, res) {
                     <head><meta charset="UTF-8"><title>IP Blocked</title>
                     <style>body{background:#0b0f19;color:#ef4444;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;margin:0;}
                     .box{border:1px solid #ef4444;padding:30px;border-radius:16px;text-align:center;background:#111827;}</style></head>
-                    <body><div class="box"><h1>🚫 ACCESS DENIED</h1><p>IP Anda (${clientIp}) telah diblokir oleh Administrator.</p></div></body>
+                    <body><div class="box"><h1>ACCESS DENIED</h1><p>IP Anda (${clientIp}) telah diblokir.</p></div></body>
                     </html>
                 `);
             }
@@ -73,7 +72,7 @@ export default async function handler(req, res) {
 
         const action = req.query.action || req.body?.action;
 
-        // CATAT TRACKING LOG JIKA AKSES DARI BROWSER UTAMA
+        // TRACKING ACCESSED LOG
         if (req.method === 'GET' && !action) {
             try {
                 const userAgent = req.headers['user-agent'] || 'Unknown';
@@ -110,13 +109,13 @@ export default async function handler(req, res) {
             `);
         }
 
-        // ACTION: GET TRACKING LOGS
+        // GET TRACKING LOGS
         if (action === 'get_tracking') {
             const logs = await sql`SELECT * FROM web_tracking_logs ORDER BY id DESC LIMIT 50`;
             return res.status(200).json({ status: true, data: logs });
         }
 
-        // ACTION: BLOCK IP
+        // BLOCK IP
         if (action === 'block_ip') {
             const targetIp = req.query.ip || req.body?.ip;
             if (!targetIp) return res.status(400).json({ status: false, message: "IP diperlukan" });
@@ -124,7 +123,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: `IP ${targetIp} berhasil diblokir!` });
         }
 
-        // ACTION: UNBLOCK IP
+        // UNBLOCK IP
         if (action === 'unblock_ip') {
             const targetIp = req.query.ip || req.body?.ip;
             if (!targetIp) return res.status(400).json({ status: false, message: "IP diperlukan" });
@@ -132,13 +131,13 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: `IP ${targetIp} berhasil dibuka blokirnya!` });
         }
 
-        // ACTION: GET BLOCKED IPS
+        // GET BLOCKED IPS
         if (action === 'get_blocked') {
             const list = await sql`SELECT * FROM blocked_ips ORDER BY blocked_at DESC`;
             return res.status(200).json({ status: true, data: list });
         }
 
-        // ACTION: CREATE KEY
+        // CREATE KEY
         if (action === 'create') {
             const { label, days, custom_key, limit } = req.body || {};
             const activeDays = parseInt(days) || 30;
@@ -167,7 +166,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key tersimpan!", data: result[0] });
         }
 
-        // ACTION: UPDATE KEY
+        // UPDATE KEY
         if (action === 'update_key') {
             const { id, add_days, new_limit } = req.body || {};
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -200,7 +199,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key berhasil diperbarui!" });
         }
 
-        // ACTION: DELETE KEY
+        // DELETE KEY
         if (action === 'delete') {
             const id = req.query.id || req.body?.id;
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -208,7 +207,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key terhapus" });
         }
 
-        // ACTION: RESET HWID DEVICE
+        // RESET HWID
         if (action === 'reset_hwid') {
             const { id, target_hwid } = req.body || req.query;
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -229,7 +228,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "HWID direset!", hwids });
         }
 
-        // ACTION: GET SINGLE KEY DETAILS
+        // GET SINGLE KEY DETAILS
         if (action === 'get_key') {
             const id = req.query.id;
             const rows = await sql`SELECT * FROM api_keys WHERE id = ${id}`;
@@ -237,25 +236,25 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, data: rows[0] });
         }
 
-        // ACTION: LIST ALL KEYS
+        // LIST ALL KEYS
         if (action === 'list') {
             const keys = await sql`SELECT * FROM api_keys ORDER BY id DESC`;
             return res.status(200).json({ status: true, data: keys });
         }
 
-        // VALIDASI POST (CLIENT/BOT)
+        // VALIDASI POST CLIENT APP (DI-FIX: "Key tidak terdaftar!")
         if (req.method === 'POST') {
             const apiKey = req.body?.key || req.body?.api_key;
             const hwid = req.body?.hwid || req.body?.device_id || 'UNKNOWN_DEVICE';
 
-            if (!apiKey) return res.status(400).json({ status: false, valid: false, message: "API Key wajib diisi!" });
+            if (!apiKey) return res.status(400).json({ status: false, valid: false, message: "Key wajib diisi!" });
 
             const rows = await sql`SELECT * FROM api_keys WHERE key_value = ${apiKey}`;
-            if (rows.length === 0) return res.status(404).json({ status: false, valid: false, message: "API Key tidak terdaftar!" });
+            if (rows.length === 0) return res.status(404).json({ status: false, valid: false, message: "Key tidak terdaftar!" });
 
             const keyData = rows[0];
             const isExpired = new Date(keyData.expired_at).getTime() < Date.now();
-            if (isExpired) return res.status(403).json({ status: false, valid: false, message: "API Key telah KADALUARSA!" });
+            if (isExpired) return res.status(403).json({ status: false, valid: false, message: "Key telah KADALUARSA!" });
 
             let hwidList = [];
             try { hwidList = JSON.parse(keyData.hwid_list || '[]'); } catch (e) { hwidList = []; }
@@ -276,7 +275,7 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 status: true,
                 valid: true,
-                message: "API Key Valid!",
+                message: "Key Valid!",
                 label: keyData.label,
                 devices: `${hwidList.length}/${deviceLimit}`,
                 expiredAt: keyData.expired_at
