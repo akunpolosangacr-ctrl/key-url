@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Key URL Manager (Neon DB)</title>
+    <title>Key URL Manager</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -15,6 +15,7 @@
             --text-muted: #94a3b8;
             --success-color: #22c55e;
             --danger-color: #ef4444;
+            --warning-color: #f59e0b;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
@@ -31,11 +32,11 @@
         .btn { background-color: var(--accent-color); color: #0f172a; font-weight: 600; padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn:hover { background-color: var(--accent-hover); }
         .btn-secondary { background-color: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); }
+        .btn-warning { background-color: var(--warning-color); color: #0f172a; }
         .btn-danger { background-color: var(--danger-color); color: #fff; }
-        .action-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .action-row { display: flex; gap: 8px; flex-wrap: wrap; }
         .url-box { background-color: #0f172a; padding: 12px; border-radius: 8px; border: 1px dashed var(--accent-color); display: flex; align-items: center; justify-content: space-between; gap: 10px; word-break: break-all; }
         .url-text { font-family: monospace; color: var(--accent-color); font-size: 0.85rem; }
-        .method-badge { background-color: #ef4444; color: #fff; font-size: 0.7rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-right: 6px; }
         .key-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
         .key-item { background-color: #0f172a; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .key-info { display: flex; flex-direction: column; gap: 4px; word-break: break-all; }
@@ -44,8 +45,27 @@
         .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; width: fit-content; }
         .badge-active { background-color: rgba(34, 197, 94, 0.2); color: var(--success-color); }
         .badge-expired { background-color: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
-        .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; display: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        svg { flex-shrink: 0; }
+        .badge-device { background-color: rgba(56, 189, 248, 0.2); color: var(--accent-color); }
+        .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; display: none; z-index: 1000; }
+        
+        /* Modal Backdrop Blur */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 999; padding: 20px;
+        }
+        .modal-card {
+            background-color: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 16px; padding: 24px; width: 100%; max-width: 480px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
+        .modal-header h3 { color: var(--accent-color); font-size: 1.1rem; }
+        .hwid-item { background: #0f172a; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 0.85rem; }
+        
         @media (max-width: 600px) { .key-item, .url-box { flex-direction: column; align-items: stretch; } .btn { width: 100%; } }
     </style>
 </head>
@@ -56,7 +76,7 @@
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
             Key URL Manager
         </h1>
-        <p>Manajemen Validasi Key Terhubung ke Neon Postgres Database.</p>
+        <p>Dashboard Validasi & Device Limit Control (Neon Postgres DB)</p>
     </header>
 
     <div class="card">
@@ -66,10 +86,7 @@
         </h2>
         <div class="url-box">
             <span class="url-text" id="vercelUrl">Loading...</span>
-            <button class="btn btn-secondary" onclick="copyVercelUrl()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                Copy URL
-            </button>
+            <button class="btn btn-secondary" onclick="copyVercelUrl()">📋 Copy URL</button>
         </div>
     </div>
 
@@ -79,29 +96,44 @@
             Generate Key Baru
         </h2>
         <div class="form-group">
-            <label for="keyLabel">Label Key / User:</label>
-            <input type="text" id="keyLabel" placeholder="Nama Key (contoh: User HTTP Injector / GG)">
+            <label for="keyLabel">Label Key / User Name:</label>
+            <input type="text" id="keyLabel" placeholder="Nama Key (contoh: LGL VIP User)">
         </div>
         <div class="form-group">
             <label for="customKey">Custom Key (Opsional - Kosongkan jika ingin Random Key vdb_...):</label>
-            <input type="text" id="customKey" placeholder="Ketik Key yang Kamu Mau (contoh: MYKEY123)">
+            <input type="text" id="customKey" placeholder="Ketik Custom Key (contoh: MYKEY123)">
         </div>
-        <div class="form-group">
-            <label for="keyDays">Masa Aktif (Hari):</label>
-            <input type="number" id="keyDays" value="30" min="1">
+        <div class="form-group" style="display: flex; gap: 12px;">
+            <div style="flex: 1;">
+                <label for="keyDays">Masa Aktif (Hari):</label>
+                <input type="number" id="keyDays" value="30" min="1">
+            </div>
+            <div style="flex: 1;">
+                <label for="deviceLimit">Limit Device (HWID):</label>
+                <input type="number" id="deviceLimit" value="1" min="1">
+            </div>
         </div>
         <div class="action-row">
-            <button class="btn" onclick="createNewKey()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                Generate & Simpan ke DB
-            </button>
+            <button class="btn" onclick="createNewKey()">✨ Generate & Simpan ke DB</button>
         </div>
 
-        <h2 style="margin-top: 24px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
-            Daftar Key di Database Neon
-        </h2>
+        <h2 style="margin-top: 24px;">📋 Daftar Key & Devices di Database</h2>
         <div id="keyList" class="key-list">Memuat data...</div>
+    </div>
+</div>
+
+<!-- Modal Reset HWID dengan Background Blur -->
+<div class="modal-overlay" id="hwidModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>📱 Manage Device HWID</h3>
+            <button class="btn btn-secondary" style="padding: 4px 8px;" onclick="closeModal()">✕</button>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Daftar HWID Device terdaftar untuk key ini:</p>
+        <div id="modalHwidList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;"></div>
+        <div class="action-row" style="margin-top: 10px;">
+            <button class="btn btn-warning" style="width: 100%;" onclick="resetAllHwidInModal()">🔄 Reset Semua Device HWID</button>
+        </div>
     </div>
 </div>
 
@@ -109,16 +141,15 @@
 
 <script>
 const API_ENDPOINT = "/api/connect";
+let activeModalKeyId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("vercelUrl").innerHTML = '<span class="method-badge">POST</span>' + window.location.origin + API_ENDPOINT;
+    document.getElementById("vercelUrl").innerText = window.location.origin + API_ENDPOINT;
     loadKeysFromDatabase();
 });
 
 function copyVercelUrl() {
-    navigator.clipboard.writeText(window.location.origin + API_ENDPOINT).then(() => {
-        showToast("✅ POST API URL berhasil disalin!");
-    });
+    navigator.clipboard.writeText(window.location.origin + API_ENDPOINT).then(() => showToast("✅ URL Copied!"));
 }
 
 async function loadKeysFromDatabase() {
@@ -126,48 +157,37 @@ async function loadKeysFromDatabase() {
     try {
         const res = await fetch(`${API_ENDPOINT}?action=list`);
         const result = await res.json();
-
-        if (!result.status) {
-            container.innerHTML = `<p style="color: var(--danger-color); text-align: center;">${result.message}</p>`;
-            return;
-        }
+        if (!result.status) return container.innerHTML = `<p style="color:var(--danger-color);">${result.message}</p>`;
 
         const keys = result.data;
-        if (!keys || keys.length === 0) {
-            container.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 10px;">Belum ada key di database.</p>`;
-            return;
-        }
+        if (!keys || keys.length === 0) return container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">Belum ada key.</p>`;
 
         const now = new Date().getTime();
 
         container.innerHTML = keys.map(k => {
             const isExpired = new Date(k.expired_at).getTime() < now;
-            const statusBadge = isExpired 
-                ? `<span class="badge badge-expired">EXPIRED</span>` 
-                : `<span class="badge badge-active">AKTIF (${k.active_days} Hari)</span>`;
+            const hwids = JSON.parse(k.hwid_list || '[]');
+            const deviceLimit = k.device_limit || 1;
+
+            const statusBadge = isExpired ? `<span class="badge badge-expired">EXPIRED</span>` : `<span class="badge badge-active">AKTIF (${k.active_days} Hari)</span>`;
+            const deviceBadge = `<span class="badge badge-device">📱 ${hwids.length}/${deviceLimit} Device</span>`;
 
             return `
             <div class="key-item">
                 <div class="key-info">
-                    <div><strong>${escapeHtml(k.label)}</strong> ${statusBadge}</div>
+                    <div><strong>${escapeHtml(k.label)}</strong> ${statusBadge} ${deviceBadge}</div>
                     <span class="key-value">${k.key_value}</span>
                     <span class="key-date">Kadaluarsa: ${new Date(k.expired_at).toLocaleString("id-ID")}</span>
                 </div>
                 <div class="action-row">
-                    <button class="btn btn-secondary" onclick="copyKeyToClipboard('${k.key_value}')">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        Copy
-                    </button>
-                    <button class="btn btn-danger" onclick="deleteKey(${k.id})">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        Hapus
-                    </button>
+                    <button class="btn btn-secondary" onclick="copyKeyToClipboard('${k.key_value}')">📋 Copy</button>
+                    <button class="btn btn-warning" onclick="openHwidModal(${k.id}, '${escapeHtml(k.label)}', '${k.hwid_list}')">📱 HWID</button>
+                    <button class="btn btn-danger" onclick="deleteKey(${k.id})">🗑️ Hapus</button>
                 </div>
-            </div>
-            `;
+            </div>`;
         }).join("");
-    } catch (err) {
-        container.innerHTML = `<p style="color: var(--danger-color); text-align: center;">Gagal terhubung ke Database</p>`;
+    } catch (e) {
+        container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Error koneksi database</p>`;
     }
 }
 
@@ -175,43 +195,94 @@ async function createNewKey() {
     const label = document.getElementById("keyLabel").value.trim() || "Untitled Key";
     const customKey = document.getElementById("customKey").value.trim();
     const days = parseInt(document.getElementById("keyDays").value) || 30;
+    const limit = parseInt(document.getElementById("deviceLimit").value) || 1;
 
     showToast("Mengirim ke Database...");
-
     try {
         const res = await fetch(`${API_ENDPOINT}?action=create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ label: label, days: days, custom_key: customKey })
+            body: JSON.stringify({ label, days, custom_key: customKey, limit })
         });
         const result = await res.json();
-
         if (result.status) {
             document.getElementById("keyLabel").value = "";
             document.getElementById("customKey").value = "";
-            showToast("✨ Key berhasil tersimpan di DB!");
+            showToast("✨ Key tersimpan!");
             loadKeysFromDatabase();
         } else {
             alert("Gagal: " + result.message);
         }
     } catch (e) {
-        alert("Gagal menyimpan key ke Database.");
+        alert("Gagal menyimpan key.");
     }
 }
 
-async function deleteKey(id) {
-    if (!confirm("Hapus key ini dari Database Neon?")) return;
+function openHwidModal(id, label, hwidListJson) {
+    activeModalKeyId = id;
+    const hwids = JSON.parse(hwidListJson || '[]');
+    const container = document.getElementById("modalHwidList");
 
+    if (hwids.length === 0) {
+        container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; text-align:center;">Belum ada device terhubung.</p>`;
+    } else {
+        container.innerHTML = hwids.map(h => `
+            <div class="hwid-item">
+                <span>${h}</span>
+                <button class="btn btn-danger" style="padding: 2px 8px; font-size: 0.75rem;" onclick="removeSingleHwid('${h}')">Hapus</button>
+            </div>
+        `).join("");
+    }
+
+    document.getElementById("hwidModal").style.display = "flex";
+}
+
+function closeModal() {
+    document.getElementById("hwidModal").style.display = "none";
+    activeModalKeyId = null;
+}
+
+async function removeSingleHwid(targetHwid) {
+    if (!activeModalKeyId) return;
+    try {
+        const res = await fetch(`${API_ENDPOINT}?action=reset_hwid`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: activeModalKeyId, target_hwid: targetHwid })
+        });
+        const resData = await res.json();
+        if (resData.status) {
+            showToast("Device dihapus!");
+            closeModal();
+            loadKeysFromDatabase();
+        }
+    } catch (e) { alert("Gagal reset HWID"); }
+}
+
+async function resetAllHwidInModal() {
+    if (!activeModalKeyId || !confirm("Reset SEMUAH device terhubung untuk key ini?")) return;
+    try {
+        const res = await fetch(`${API_ENDPOINT}?action=reset_hwid`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: activeModalKeyId })
+        });
+        const resData = await res.json();
+        if (resData.status) {
+            showToast("Semua Device Direset!");
+            closeModal();
+            loadKeysFromDatabase();
+        }
+    } catch (e) { alert("Gagal reset HWID"); }
+}
+
+async function deleteKey(id) {
+    if (!confirm("Hapus key ini dari Database?")) return;
     try {
         const res = await fetch(`${API_ENDPOINT}?action=delete&id=${id}`, { method: "DELETE" });
         const result = await res.json();
-        if (result.status) {
-            showToast("🗑️ Key dihapus dari DB!");
-            loadKeysFromDatabase();
-        }
-    } catch (e) {
-        alert("Gagal menghapus key.");
-    }
+        if (result.status) { showToast("Key dihapus!"); loadKeysFromDatabase(); }
+    } catch (e) { alert("Gagal menghapus key."); }
 }
 
 function copyKeyToClipboard(val) {
