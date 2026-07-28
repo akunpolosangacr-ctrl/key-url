@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Key URL Manager & Security Control</title>
+    <title>Key URL Manager Dashboard</title>
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -26,17 +26,13 @@
         #pageLoader {
             position: fixed; inset: 0; background: #0b0f19; z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s ease, visibility 0.5s;
+            transition: opacity 0.4s ease, visibility 0.4s;
         }
         .spinner-icon {
-            width: 48px; height: 48px; color: var(--accent-color);
-            animation: pulseSpin 1.4s ease-in-out infinite;
+            width: 44px; height: 44px; color: var(--accent-color);
+            animation: spin 1.2s linear infinite;
         }
-        @keyframes pulseSpin {
-            0% { transform: scale(0.8) rotate(0deg); opacity: 0.6; }
-            50% { transform: scale(1.1) rotate(180deg); opacity: 1; }
-            100% { transform: scale(0.8) rotate(360deg); opacity: 0.6; }
-        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
         header, .card {
             background-color: var(--card-bg); padding: 24px; border-radius: 16px;
@@ -51,48 +47,48 @@
             position: absolute; top: 18px; left: 18px; background: rgba(30, 41, 59, 0.6);
             border: 1px solid var(--card-border); border-radius: 10px; color: var(--accent-color);
             padding: 8px 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
+            transition: background 0.2s;
         }
-        .menu-top-left:hover { background: var(--card-border); transform: scale(1.05); }
+        .menu-top-left:hover { background: var(--card-border); }
 
-        /* LEFT SIDEBAR DRAWER (SETENGAH KIRI + BLUR) */
+        /* LEFT SIDEBAR DRAWER */
         .drawer-overlay {
             position: fixed; inset: 0; background: rgba(11, 15, 25, 0.65);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            z-index: 2000; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .drawer-overlay.active { opacity: 1; pointer-events: auto; }
 
         .drawer-content {
-            position: fixed; top: 0; left: 0; width: 80%; max-width: 320px; height: 100vh;
+            position: fixed; top: 0; left: 0; width: 78%; max-width: 320px; height: 100vh;
             background: #0f172a; border-right: 1px solid var(--card-border);
             box-shadow: 10px 0 30px rgba(0,0,0,0.5); z-index: 2001;
-            padding: 24px; display: flex; flex-direction: column; gap: 16px;
+            padding: 24px; display: flex; flex-direction: column; gap: 18px;
             transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             overflow-y: auto;
         }
         .drawer-overlay.active .drawer-content { transform: translateX(0); }
 
         .drawer-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; }
-        .drawer-header h3 { color: var(--accent-color); font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .drawer-header h3 { color: var(--accent-color); font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
         .drawer-menu-item {
-            padding: 12px 14px; border-radius: 10px; background: rgba(30, 41, 59, 0.5);
+            padding: 12px 14px; border-radius: 10px; background: rgba(30, 41, 59, 0.4);
             border: 1px solid var(--card-border); color: var(--text-main); font-size: 0.88rem;
             cursor: pointer; display: flex; align-items: center; justify-content: space-between;
-            transition: all 0.2s;
+            transition: background 0.2s;
         }
-        .drawer-menu-item:hover { background: var(--accent-color); color: #0b0f19; font-weight: 600; }
+        .drawer-menu-item:hover { background: rgba(56, 189, 248, 0.15); border-color: var(--accent-color); }
 
-        .card h2 { font-size: 1.15rem; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; color: var(--accent-color); display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .card h2 { font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; color: var(--accent-color); display: flex; align-items: center; gap: 8px; font-weight: 600; }
 
         .form-group { margin-bottom: 14px; }
         label { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted); }
-        input[type="text"], input[type="number"] { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--card-border); background-color: #0b0f19; color: var(--text-main); font-size: 0.9rem; outline: none; transition: all 0.2s; }
-        input:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
+        input[type="text"], input[type="number"] { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--card-border); background-color: #0b0f19; color: var(--text-main); font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+        input:focus { border-color: var(--accent-color); }
 
-        .btn { background-color: var(--accent-color); color: #0b0f19; font-weight: 600; padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; }
-        .btn:hover { background-color: var(--accent-hover); transform: translateY(-1px); }
+        .btn { background-color: var(--accent-color); color: #0b0f19; font-weight: 600; padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; }
+        .btn:hover { background-color: var(--accent-hover); }
         .btn-secondary { background-color: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); }
         .btn-secondary:hover { background-color: rgba(56, 189, 248, 0.1); }
         .btn-warning { background-color: rgba(245, 158, 11, 0.15); border: 1px solid var(--warning-color); color: var(--warning-color); }
@@ -118,21 +114,21 @@
         /* MODAL TASKBAR TENGAH */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(11, 15, 25, 0.75);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             display: flex; justify-content: center; align-items: center;
-            z-index: 3000; padding: 20px; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 3000; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-card {
             background-color: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 20px; padding: 24px; width: 100%; max-width: 500px;
+            border-radius: 20px; padding: 24px; width: 100%; max-width: 480px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 16px;
-            transform: translateY(20px) scale(0.96); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: scale(0.96); transition: transform 0.3s ease;
         }
-        .modal-overlay.active .modal-card { transform: translateY(0) scale(1); }
+        .modal-overlay.active .modal-card { transform: scale(1); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; }
-        .modal-header h3 { color: var(--accent-color); font-size: 1.1rem; display: flex; align-items: center; gap: 8px; font-weight: 600; }
-        .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; transition: all 0.2s; }
+        .modal-header h3 { color: var(--accent-color); font-size: 1.05rem; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; }
         .close-btn:hover { background-color: rgba(239, 68, 68, 0.15); color: var(--danger-color); }
 
         .log-item { background: #0b0f19; padding: 12px; border-radius: 10px; border: 1px solid var(--card-border); font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
@@ -146,9 +142,12 @@
 <!-- INITIAL LOADER -->
 <div id="pageLoader">
     <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+        <line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line>
+        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+        <line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line>
+        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
     </svg>
-    <p style="margin-top: 14px; font-size: 0.85rem; color: var(--accent-color); font-weight: 600;">MEMUAT SYSTEM SECURITY...</p>
+    <p style="margin-top: 14px; font-size: 0.85rem; color: var(--accent-color); font-weight: 600;">MEMUAT SYSTEM...</p>
 </div>
 
 <!-- LEFT SIDEBAR DRAWER -->
@@ -157,31 +156,25 @@
         <div class="drawer-header">
             <h3>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                Security Center
+                Storage & System
             </h3>
             <button class="close-btn" onclick="closeDrawer()">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
         </div>
 
-        <div class="drawer-menu-item" onclick="openTrackingModal(); closeDrawer();">
+        <div class="drawer-menu-item" style="cursor: default;">
             <span style="display:flex; align-items:center; gap:8px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                Web Tracking Logs
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                Database Neon Postgres
             </span>
-        </div>
-
-        <div class="drawer-menu-item" onclick="openBlockedIpModal(); closeDrawer();">
-            <span style="display:flex; align-items:center; gap:8px; color:var(--danger-color)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                Blocked IP List
-            </span>
+            <span style="color:var(--success-color); font-size:0.75rem; font-weight:bold;">CONNECTED</span>
         </div>
 
         <div class="drawer-menu-item" onclick="loadKeysFromDatabase(); closeDrawer();">
             <span style="display:flex; align-items:center; gap:8px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                Sync Database
+                Refresh Database
             </span>
         </div>
     </div>
@@ -218,7 +211,7 @@
         </h2>
         <div class="form-group">
             <label for="keyLabel">Label Key / User Name:</label>
-            <input type="text" id="keyLabel" placeholder="Nama Key (contoh: LGL VIP User)">
+            <input type="text" id="keyLabel" placeholder="Nama Key (contoh: VIP User)">
         </div>
         <div class="form-group">
             <label for="customKey">Custom Key (Opsional - Kosongkan untuk Random vdb_...):</label>
@@ -265,36 +258,10 @@
         </div>
         <button class="btn btn-secondary" style="width: 100%;" onclick="saveKeySettingsFromModal()">Update Masa Aktif & Limit</button>
 
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">Daftar Device HWID terhubung:</p>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">Daftar Device HWID Terhubung:</p>
         <div id="modalHwidList" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto;"></div>
 
         <button class="btn btn-warning" style="width: 100%;" onclick="resetAllHwidInModal()">Reset Semua Device HWID</button>
-    </div>
-</div>
-
-<!-- MODAL WEB TRACKING LOGS -->
-<div class="modal-overlay" id="trackingModal">
-    <div class="modal-card">
-        <div class="modal-header">
-            <h3>Web Tracking Logs (Akses Web)</h3>
-            <button class="close-btn" onclick="closeModal('trackingModal')">✕</button>
-        </div>
-        <div id="trackingLogsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
-            Memuat logs...
-        </div>
-    </div>
-</div>
-
-<!-- MODAL BLOCKED IP LIST (LENGKAP DENGAN TOMBOL UNBLOCK) -->
-<div class="modal-overlay" id="blockedIpModal">
-    <div class="modal-card">
-        <div class="modal-header">
-            <h3 style="color:var(--danger-color)">List IP Terblokir</h3>
-            <button class="close-btn" onclick="closeModal('blockedIpModal')">✕</button>
-        </div>
-        <div id="blockedIpsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
-            Memuat list IP terblokir...
-        </div>
     </div>
 </div>
 
@@ -327,8 +294,8 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
         const loader = document.getElementById("pageLoader");
         loader.style.opacity = "0";
-        setTimeout(() => loader.style.visibility = "hidden", 500);
-    }, 600);
+        setTimeout(() => loader.style.visibility = "hidden", 400);
+    }, 500);
 });
 
 function openDrawer() { document.getElementById("leftDrawer").classList.add("active"); }
@@ -436,72 +403,6 @@ async function openHwidModal(id) {
             `).join("");
         }
     } catch(e) { container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Gagal memuat devices.</p>`; }
-}
-
-async function openTrackingModal() {
-    const container = document.getElementById("trackingLogsList");
-    container.innerHTML = `<p style="color:var(--text-muted); text-align:center;">Memuat web tracking logs...</p>`;
-    document.getElementById("trackingModal").classList.add("active");
-
-    try {
-        const res = await fetch(`${API_ENDPOINT}?action=get_tracking`);
-        const result = await res.json();
-        if (!result.status || !result.data.length) return container.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding:10px;">Belum ada log akses website.</p>`;
-
-        container.innerHTML = result.data.map(l => `
-            <div class="log-item">
-                <div>
-                    <div><strong>IP: ${escapeHtml(l.ip)}</strong></div>
-                    <div style="font-size:0.75rem; color:var(--text-muted);">${new Date(l.created_at).toLocaleString('id-ID')}</div>
-                </div>
-                <button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="blockIpAction('${escapeHtml(l.ip)}')">Blockir IP</button>
-            </div>
-        `).join("");
-    } catch(e) { container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Gagal memuat tracking logs.</p>`; }
-}
-
-async function openBlockedIpModal() {
-    const container = document.getElementById("blockedIpsList");
-    container.innerHTML = `<p style="color:var(--text-muted); text-align:center;">Memuat IP terblokir...</p>`;
-    document.getElementById("blockedIpModal").classList.add("active");
-
-    try {
-        const res = await fetch(`${API_ENDPOINT}?action=get_blocked`);
-        const result = await res.json();
-        if (!result.status || !result.data.length) return container.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding:10px;">Belum ada IP yang diblokir.</p>`;
-
-        container.innerHTML = result.data.map(b => `
-            <div class="log-item">
-                <div>
-                    <div><strong>IP: ${escapeHtml(b.ip)}</strong></div>
-                    <div style="font-size:0.75rem; color:var(--text-muted);">${new Date(b.blocked_at).toLocaleString('id-ID')}</div>
-                </div>
-                <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.75rem;" onclick="unblockIpAction('${escapeHtml(b.ip)}')">Unblock IP</button>
-            </div>
-        `).join("");
-    } catch(e) { container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">Gagal memuat list IP terblokir.</p>`; }
-}
-
-async function blockIpAction(ip) {
-    try {
-        const res = await fetch(`${API_ENDPOINT}?action=block_ip&ip=${ip}`);
-        const result = await res.json();
-        if (result.status) {
-            showToast(`IP ${ip} diblokir!`);
-            openTrackingModal();
-        }
-    } catch(e) { alert("Gagal memblokir IP."); }
-}
-
-async function unblockIpAction(ip) {
-    try {
-        const res = await fetch(`${API_ENDPOINT}?action=unblock_ip&ip=${ip}`);
-        const result = await res.json();
-        if (result.status) {
-            showToast(`IP ${ip} dibuka blokir!`);
-            openBlockedIpModal();
-        }
-    } catch(e) { alert("Gagal membuka blokir IP."); }
 }
 
 async function saveKeySettingsFromModal() {

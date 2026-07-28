@@ -14,10 +14,6 @@ export default async function handler(req, res) {
 
     const sql = neon(dbUrl);
 
-    // Dapatkan Real IP Pengunjung
-    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
-    const clientIp = rawIp.split(',')[0].trim();
-
     try {
         await sql`
             CREATE TABLE IF NOT EXISTS api_keys (
@@ -31,54 +27,14 @@ export default async function handler(req, res) {
                 hwid_list TEXT DEFAULT '[]'
             );
         `;
-        await sql`
-            CREATE TABLE IF NOT EXISTS blocked_ips (
-                ip VARCHAR(100) PRIMARY KEY,
-                blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `;
-        await sql`
-            CREATE TABLE IF NOT EXISTS web_tracking_logs (
-                id SERIAL PRIMARY KEY,
-                ip VARCHAR(100) NOT NULL,
-                user_agent TEXT,
-                path TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `;
 
         try {
             await sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS device_limit INT DEFAULT 1;`;
             await sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS hwid_list TEXT DEFAULT '[]';`;
         } catch (e) {}
 
-        // CEK STATUS BLOKIR IP
-        const checkBlocked = await sql`SELECT ip FROM blocked_ips WHERE ip = ${clientIp}`;
-        if (checkBlocked.length > 0) {
-            if (req.method === 'GET' && !req.query.action) {
-                res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                return res.status(403).send(`
-                    <!DOCTYPE html>
-                    <html lang="id">
-                    <head><meta charset="UTF-8"><title>IP Blocked</title>
-                    <style>body{background:#0b0f19;color:#ef4444;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;margin:0;}
-                    .box{border:1px solid #ef4444;padding:30px;border-radius:16px;text-align:center;background:#111827;}</style></head>
-                    <body><div class="box"><h1>ACCESS DENIED</h1><p>IP Anda (${clientIp}) telah diblokir.</p></div></body>
-                    </html>
-                `);
-            }
-            return res.status(403).json({ status: false, message: `IP Anda (${clientIp}) diblokir!` });
-        }
-
-        const action = req.query.action || req.body?.action;
-
-        // TRACKING ACCESSED LOG
-        if (req.method === 'GET' && !action) {
-            try {
-                const userAgent = req.headers['user-agent'] || 'Unknown';
-                await sql`INSERT INTO web_tracking_logs (ip, user_agent, path) VALUES (${clientIp}, ${userAgent}, ${req.url});`;
-            } catch (e) {}
-
+        // PROTECTED PAGE UNTUK GET BROWSER TANPA QUERY ACTION
+        if (req.method === 'GET' && !req.query.action) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(200).send(`
                 <!DOCTYPE html>
@@ -88,11 +44,11 @@ export default async function handler(req, res) {
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>Protected System</title>
                     <style>
-                        * { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; }
+                        * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, sans-serif; }
                         body { background-color: #0b0f19; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; padding: 20px; }
                         .card { background-color: #111827; border: 1px solid #1e293b; border-radius: 20px; padding: 48px 32px; text-align: center; max-width: 360px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
-                        .icon-wrap { width: 64px; height: 64px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; color: #ef4444; }
-                        h1 { font-size: 1.4rem; color: #f8fafc; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; }
+                        .icon-wrap { width: 64px; height: 64px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; color: #38bdf8; }
+                        h1 { font-size: 1.3rem; color: #f8fafc; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; }
                         p { font-size: 0.85rem; color: #64748b; line-height: 1.5; }
                     </style>
                 </head>
@@ -109,35 +65,9 @@ export default async function handler(req, res) {
             `);
         }
 
-        // GET TRACKING LOGS
-        if (action === 'get_tracking') {
-            const logs = await sql`SELECT * FROM web_tracking_logs ORDER BY id DESC LIMIT 50`;
-            return res.status(200).json({ status: true, data: logs });
-        }
+        const action = req.query.action || req.body?.action;
 
-        // BLOCK IP
-        if (action === 'block_ip') {
-            const targetIp = req.query.ip || req.body?.ip;
-            if (!targetIp) return res.status(400).json({ status: false, message: "IP diperlukan" });
-            await sql`INSERT INTO blocked_ips (ip) VALUES (${targetIp}) ON CONFLICT DO NOTHING;`;
-            return res.status(200).json({ status: true, message: `IP ${targetIp} berhasil diblokir!` });
-        }
-
-        // UNBLOCK IP
-        if (action === 'unblock_ip') {
-            const targetIp = req.query.ip || req.body?.ip;
-            if (!targetIp) return res.status(400).json({ status: false, message: "IP diperlukan" });
-            await sql`DELETE FROM blocked_ips WHERE ip = ${targetIp}`;
-            return res.status(200).json({ status: true, message: `IP ${targetIp} berhasil dibuka blokirnya!` });
-        }
-
-        // GET BLOCKED IPS
-        if (action === 'get_blocked') {
-            const list = await sql`SELECT * FROM blocked_ips ORDER BY blocked_at DESC`;
-            return res.status(200).json({ status: true, data: list });
-        }
-
-        // CREATE KEY
+        // ACTION: CREATE KEY
         if (action === 'create') {
             const { label, days, custom_key, limit } = req.body || {};
             const activeDays = parseInt(days) || 30;
@@ -166,7 +96,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key tersimpan!", data: result[0] });
         }
 
-        // UPDATE KEY
+        // ACTION: UPDATE KEY (FIX EXPIRED ACCURACY)
         if (action === 'update_key') {
             const { id, add_days, new_limit } = req.body || {};
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -199,7 +129,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key berhasil diperbarui!" });
         }
 
-        // DELETE KEY
+        // ACTION: DELETE KEY
         if (action === 'delete') {
             const id = req.query.id || req.body?.id;
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -207,7 +137,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "Key terhapus" });
         }
 
-        // RESET HWID
+        // ACTION: RESET HWID DEVICE
         if (action === 'reset_hwid') {
             const { id, target_hwid } = req.body || req.query;
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
@@ -228,7 +158,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, message: "HWID direset!", hwids });
         }
 
-        // GET SINGLE KEY DETAILS
+        // ACTION: GET SINGLE KEY DETAILS
         if (action === 'get_key') {
             const id = req.query.id;
             const rows = await sql`SELECT * FROM api_keys WHERE id = ${id}`;
@@ -236,13 +166,13 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, data: rows[0] });
         }
 
-        // LIST ALL KEYS
+        // ACTION: LIST ALL KEYS
         if (action === 'list') {
             const keys = await sql`SELECT * FROM api_keys ORDER BY id DESC`;
             return res.status(200).json({ status: true, data: keys });
         }
 
-        // VALIDASI POST CLIENT APP (DI-FIX: "Key tidak terdaftar!")
+        // VALIDASI POST CLIENT APP (VALIDASI SESUAI PERMINTAAN)
         if (req.method === 'POST') {
             const apiKey = req.body?.key || req.body?.api_key;
             const hwid = req.body?.hwid || req.body?.device_id || 'UNKNOWN_DEVICE';
