@@ -6,65 +6,97 @@
     <title>Key URL Manager</title>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --border-color: #334155;
+            --bg-color: #0b0f19;
+            --card-bg: #111827;
+            --card-border: #1e293b;
             --accent-color: #38bdf8;
             --accent-hover: #0284c7;
-            --text-color: #f8fafc;
-            --text-muted: #94a3b8;
+            --text-main: #f8fafc;
+            --text-muted: #64748b;
             --success-color: #22c55e;
             --danger-color: #ef4444;
             --warning-color: #f59e0b;
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
         .container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 20px; }
-        header, .card { background-color: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); }
+
+        header, .card {
+            background-color: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
         header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        header h1 { font-size: 1.5rem; color: var(--accent-color); display: flex; align-items: center; gap: 10px; }
+        header h1 { font-size: 1.5rem; color: var(--accent-color); display: flex; align-items: center; gap: 10px; font-weight: 700; }
         header p { color: var(--text-muted); font-size: 0.88rem; }
-        .card h2 { font-size: 1.15rem; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; color: var(--accent-color); display: flex; align-items: center; gap: 8px; }
+
+        .card h2 { font-size: 1.15rem; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; color: var(--accent-color); display: flex; align-items: center; gap: 8px; font-weight: 600; }
+
         .form-group { margin-bottom: 14px; }
-        label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted); }
-        input[type="text"], input[type="number"] { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background-color: #0f172a; color: var(--text-color); font-size: 0.9rem; outline: none; }
-        input:focus { border-color: var(--accent-color); }
-        .btn { background-color: var(--accent-color); color: #0f172a; font-weight: 600; padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn:hover { background-color: var(--accent-hover); }
+        label { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted); }
+        input[type="text"], input[type="number"] { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--card-border); background-color: #0b0f19; color: var(--text-main); font-size: 0.9rem; outline: none; transition: all 0.2s; }
+        input:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
+
+        .btn { background-color: var(--accent-color); color: #0b0f19; font-weight: 600; padding: 10px 16px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; }
+        .btn:hover { background-color: var(--accent-hover); transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
         .btn-secondary { background-color: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); }
-        .btn-warning { background-color: var(--warning-color); color: #0f172a; }
-        .btn-danger { background-color: var(--danger-color); color: #fff; }
+        .btn-secondary:hover { background-color: rgba(56, 189, 248, 0.1); }
+        .btn-warning { background-color: rgba(245, 158, 11, 0.15); border: 1px solid var(--warning-color); color: var(--warning-color); }
+        .btn-warning:hover { background-color: var(--warning-color); color: #0b0f19; }
+        .btn-danger { background-color: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger-color); color: var(--danger-color); }
+        .btn-danger:hover { background-color: var(--danger-color); color: #fff; }
+
         .action-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .url-box { background-color: #0f172a; padding: 12px; border-radius: 8px; border: 1px dashed var(--accent-color); display: flex; align-items: center; justify-content: space-between; gap: 10px; word-break: break-all; }
+        .url-box { background-color: #0b0f19; padding: 14px; border-radius: 10px; border: 1px dashed var(--accent-color); display: flex; align-items: center; justify-content: space-between; gap: 10px; word-break: break-all; }
         .url-text { font-family: monospace; color: var(--accent-color); font-size: 0.85rem; }
-        .key-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
-        .key-item { background-color: #0f172a; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .key-info { display: flex; flex-direction: column; gap: 4px; word-break: break-all; }
-        .key-value { font-family: monospace; color: var(--accent-color); font-size: 0.85rem; }
+
+        .key-list { margin-top: 14px; display: flex; flex-direction: column; gap: 12px; }
+        .key-item { background-color: #0b0f19; padding: 16px; border-radius: 12px; border: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; transition: border-color 0.2s; }
+        .key-item:hover { border-color: #334155; }
+        .key-info { display: flex; flex-direction: column; gap: 6px; word-break: break-all; }
+        .key-value { font-family: monospace; color: var(--accent-color); font-size: 0.88rem; font-weight: 600; }
         .key-date { font-size: 0.75rem; color: var(--text-muted); }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; width: fit-content; }
-        .badge-active { background-color: rgba(34, 197, 94, 0.2); color: var(--success-color); }
-        .badge-expired { background-color: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
-        .badge-device { background-color: rgba(56, 189, 248, 0.2); color: var(--accent-color); }
-        .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; display: none; z-index: 1000; }
-        
+
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+        .badge-active { background-color: rgba(34, 197, 94, 0.15); color: var(--success-color); border: 1px solid rgba(34, 197, 94, 0.3); }
+        .badge-expired { background-color: rgba(239, 68, 68, 0.15); color: var(--danger-color); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-device { background-color: rgba(56, 189, 248, 0.15); color: var(--accent-color); border: 1px solid rgba(56, 189, 248, 0.3); }
+
+        /* Smooth Overlay Blur & Offset Modal */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            display: none; justify-content: center; align-items: center;
-            z-index: 999; padding: 20px;
+            background: rgba(11, 15, 25, 0.75);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; padding: 20px;
+            opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
         .modal-card {
-            background-color: var(--card-bg); border: 1px solid var(--border-color);
-            border-radius: 16px; padding: 24px; width: 100%; max-width: 480px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px;
+            background-color: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 20px; padding: 24px; width: 100%; max-width: 480px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            display: flex; flex-direction: column; gap: 16px;
+            transform: translateY(20px) scale(0.96); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
-        .modal-header h3 { color: var(--accent-color); font-size: 1.1rem; }
-        .hwid-item { background: #0f172a; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 0.85rem; }
-        
+        .modal-overlay.active .modal-card { transform: translateY(0) scale(1); }
+
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; }
+        .modal-header h3 { color: var(--accent-color); font-size: 1.1rem; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .close-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; transition: all 0.2s; }
+        .close-btn:hover { background-color: rgba(239, 68, 68, 0.15); color: var(--danger-color); }
+
+        .hwid-item { background: #0b0f19; padding: 12px; border-radius: 10px; border: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 0.85rem; }
+
+        .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--success-color); color: #fff; padding: 12px 20px; border-radius: 10px; font-weight: 600; display: none; z-index: 1100; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+
+        svg { flex-shrink: 0; }
         @media (max-width: 600px) { .key-item, .url-box { flex-direction: column; align-items: stretch; } .btn { width: 100%; } }
     </style>
 </head>
@@ -72,26 +104,29 @@
 <div class="container">
     <header>
         <h1>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
             Key URL Manager
         </h1>
-        <p>Dashboard Validasi & Device Limit Control (Neon Postgres DB)</p>
+        <p>System Key & Multi-Device Control (Neon Postgres DB)</p>
     </header>
 
     <div class="card">
         <h2>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             Vercel Validation Endpoint
         </h2>
         <div class="url-box">
             <span class="url-text" id="vercelUrl">Loading...</span>
-            <button class="btn btn-secondary" onclick="copyVercelUrl()">📋 Copy URL</button>
+            <button class="btn btn-secondary" onclick="copyVercelUrl()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy URL
+            </button>
         </div>
     </div>
 
     <div class="card">
         <h2>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Generate Key Baru
         </h2>
         <div class="form-group">
@@ -99,7 +134,7 @@
             <input type="text" id="keyLabel" placeholder="Nama Key (contoh: LGL VIP User)">
         </div>
         <div class="form-group">
-            <label for="customKey">Custom Key (Opsional - Kosongkan jika ingin Random Key vdb_...):</label>
+            <label for="customKey">Custom Key (Opsional - Kosongkan untuk Random vdb_...):</label>
             <input type="text" id="customKey" placeholder="Ketik Custom Key (contoh: MYKEY123)">
         </div>
         <div class="form-group" style="display: flex; gap: 12px;">
@@ -108,29 +143,49 @@
                 <input type="number" id="keyDays" value="30" min="1">
             </div>
             <div style="flex: 1;">
-                <label for="deviceLimit">Limit Device (HWID):</label>
+                <label for="deviceLimit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                    Limit Device:
+                </label>
                 <input type="number" id="deviceLimit" value="1" min="1">
             </div>
         </div>
         <div class="action-row">
-            <button class="btn" onclick="createNewKey()">✨ Generate & Simpan ke DB</button>
+            <button class="btn" onclick="createNewKey()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                Generate & Simpan ke DB
+            </button>
         </div>
 
-        <h2 style="margin-top: 24px;">📋 Daftar Key & Devices di Database</h2>
+        <h2 style="margin-top: 24px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+            Daftar Key & Devices di Database
+        </h2>
         <div id="keyList" class="key-list">Memuat data...</div>
     </div>
 </div>
 
+<!-- Modal Taskbar Tengah Blur -->
 <div class="modal-overlay" id="hwidModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3>📱 Manage Device HWID</h3>
-            <button class="btn btn-secondary" style="padding: 4px 8px;" onclick="closeModal()">✕</button>
+            <h3>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                Manage Devices HWID
+            </h3>
+            <button class="close-btn" onclick="closeModal()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
         </div>
-        <p style="font-size: 0.85rem; color: var(--text-muted);">Daftar HWID Device terdaftar untuk key ini:</p>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Daftar Device HWID terhubung:</p>
         <div id="modalHwidList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;"></div>
-        <div class="action-row" style="margin-top: 10px;">
-            <button class="btn btn-warning" style="width: 100%;" onclick="resetAllHwidInModal()">🔄 Reset Semua Device HWID</button>
+
+        <div class="action-row" style="margin-top: 8px;">
+            <button class="btn btn-warning" style="width: 100%;" onclick="resetAllHwidInModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                Reset Semua Device HWID
+            </button>
         </div>
     </div>
 </div>
@@ -155,10 +210,10 @@ async function loadKeysFromDatabase() {
     try {
         const res = await fetch(`${API_ENDPOINT}?action=list`);
         const result = await res.json();
-        if (!result.status) return container.innerHTML = `<p style="color:var(--danger-color);">${result.message}</p>`;
+        if (!result.status) return container.innerHTML = `<p style="color:var(--danger-color); text-align:center;">${result.message}</p>`;
 
         const keys = result.data;
-        if (!keys || keys.length === 0) return container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">Belum ada key.</p>`;
+        if (!keys || keys.length === 0) return container.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:10px;">Belum ada key terdaftar.</p>`;
 
         const now = new Date().getTime();
 
@@ -168,8 +223,11 @@ async function loadKeysFromDatabase() {
             try { hwids = JSON.parse(k.hwid_list || '[]'); } catch(e) {}
             const deviceLimit = k.device_limit || 1;
 
-            const statusBadge = isExpired ? `<span class="badge badge-expired">EXPIRED</span>` : `<span class="badge badge-active">AKTIF (${k.active_days} Hari)</span>`;
-            const deviceBadge = `<span class="badge badge-device">📱 ${hwids.length}/${deviceLimit} Device</span>`;
+            const statusBadge = isExpired 
+                ? `<span class="badge badge-expired"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> EXPIRED</span>` 
+                : `<span class="badge badge-active"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> AKTIF (${k.active_days} Hari)</span>`;
+            
+            const deviceBadge = `<span class="badge badge-device"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg> ${hwids.length}/${deviceLimit} Limit</span>`;
 
             return `
             <div class="key-item">
@@ -179,9 +237,18 @@ async function loadKeysFromDatabase() {
                     <span class="key-date">Kadaluarsa: ${new Date(k.expired_at).toLocaleString("id-ID")}</span>
                 </div>
                 <div class="action-row">
-                    <button class="btn btn-secondary" onclick="copyKeyToClipboard('${k.key_value}')">📋 Copy</button>
-                    <button class="btn btn-warning" onclick="openHwidModal(${k.id}, '${escapeHtml(k.label)}', '${escapeHtml(k.hwid_list || '[]')}')">📱 HWID</button>
-                    <button class="btn btn-danger" onclick="deleteKey(${k.id})">🗑️ Hapus</button>
+                    <button class="btn btn-secondary" onclick="copyKeyToClipboard('${k.key_value}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        Copy
+                    </button>
+                    <button class="btn btn-warning" onclick="openHwidModal(${k.id}, '${escapeHtml(k.label)}', '${escapeHtml(k.hwid_list || '[]')}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                        Devices
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteKey(${k.id})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        Hapus
+                    </button>
                 </div>
             </div>`;
         }).join("");
@@ -224,21 +291,24 @@ function openHwidModal(id, label, hwidListJson) {
     const container = document.getElementById("modalHwidList");
 
     if (hwids.length === 0) {
-        container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; text-align:center;">Belum ada device terhubung.</p>`;
+        container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:10px;">Belum ada device terhubung.</p>`;
     } else {
         container.innerHTML = hwids.map(h => `
             <div class="hwid-item">
                 <span>${h}</span>
-                <button class="btn btn-danger" style="padding: 2px 8px; font-size: 0.75rem;" onclick="removeSingleHwid('${h}')">Hapus</button>
+                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="removeSingleHwid('${h}')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    Hapus
+                </button>
             </div>
         `).join("");
     }
 
-    document.getElementById("hwidModal").style.display = "flex";
+    document.getElementById("hwidModal").classList.add("active");
 }
 
 function closeModal() {
-    document.getElementById("hwidModal").style.display = "none";
+    document.getElementById("hwidModal").classList.remove("active");
     activeModalKeyId = null;
 }
 
