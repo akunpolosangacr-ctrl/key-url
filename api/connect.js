@@ -172,7 +172,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, data: keys });
         }
 
-        // VALIDASI POST CLIENT APP (MENYIMPAN DETIL INFO DEVICE)
+        // VALIDASI POST CLIENT APP (HANYA RESPONS: "Key successful")
         if (req.method === 'POST') {
             const apiKey = req.body?.key || req.body?.api_key;
             const rawHwid = req.body?.hwid || req.body?.device_id || 'UNKNOWN_DEVICE';
@@ -192,11 +192,9 @@ export default async function handler(req, res) {
             try { hwidList = JSON.parse(keyData.hwid_list || '[]'); } catch (e) { hwidList = []; }
             const deviceLimit = keyData.device_limit || 1;
 
-            // Cari index device terhubung
             const existingIndex = hwidList.findIndex(item => (typeof item === 'string' ? item === rawHwid : item.hwid === rawHwid));
 
             if (existingIndex !== -1) {
-                // Update info device terkini
                 hwidList[existingIndex] = {
                     hwid: rawHwid,
                     name: deviceName,
@@ -205,7 +203,6 @@ export default async function handler(req, res) {
                 };
                 await sql`UPDATE api_keys SET hwid_list = ${JSON.stringify(hwidList)} WHERE id = ${keyData.id}`;
             } else {
-                // Tambah baru jika belum ada dan limit masih cukup
                 if (hwidList.length >= deviceLimit) {
                     return res.status(403).json({
                         status: false,
@@ -222,13 +219,11 @@ export default async function handler(req, res) {
                 await sql`UPDATE api_keys SET hwid_list = ${JSON.stringify(hwidList)} WHERE id = ${keyData.id}`;
             }
 
+            // DIBERSIHKAN: Hanya mengembalikan status valid & message "Key successful"
             return res.status(200).json({
                 status: true,
                 valid: true,
-                message: "Key Valid!",
-                label: keyData.label,
-                devices: `${hwidList.length}/${deviceLimit}`,
-                expiredAt: keyData.expired_at
+                message: "Key successful"
             });
         }
 
