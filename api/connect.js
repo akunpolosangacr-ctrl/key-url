@@ -13,8 +13,9 @@ export default async function handler(req, res) {
     }
 
     const sql = neon(dbUrl);
-    // PIN ADMIN RAHASIA (Bisa diatur di Environment Variables Vercel nama: ADMIN_PIN)
-    const ADMIN_PIN = process.env.ADMIN_PIN || "2049";
+    
+    // BACA STRICT DARI ENVIRONMENT VARIABLE (TANPA FALLBACK PIN TERBUNGKUS KODE)
+    const ADMIN_PIN = process.env.ADMIN_PIN;
 
     try {
         await sql`
@@ -37,18 +38,17 @@ export default async function handler(req, res) {
 
         const action = req.query.action || req.body?.action;
 
-        // PROTEKSI ADMIN ACTION (Jika ada request action, wajib menggunakan x-admin-key)
+        // PROTEKSI ADMIN ACTION (Wajib match dengan process.env.ADMIN_PIN)
         if (action) {
             const clientAdminKey = req.headers['x-admin-key'] || req.query.admin_key || req.body?.admin_key;
-            if (!clientAdminKey || clientAdminKey !== ADMIN_PIN) {
+            if (!ADMIN_PIN || !clientAdminKey || clientAdminKey !== ADMIN_PIN) {
                 return res.status(403).json({ 
                     status: false, 
                     locked: true, 
-                    message: "LOCKED: Akses ditolak! PIN Admin salah atau tidak valid." 
+                    message: "LOCKED: Akses ditolak! PIN Admin salah atau belum dikonfigurasi di Vercel." 
                 });
             }
         } else if (req.method === 'GET') {
-            // Tampilan jika endpoint diakses langsung dari browser tanpa action
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(200).send(`
                 <!DOCTYPE html>
@@ -193,7 +193,6 @@ export default async function handler(req, res) {
 
             if (!apiKey) return res.status(400).json({ status: false, valid: false, message: "Key wajib diisi!" });
 
-            // Parameterized Query anti-SQL Injection
             const rows = await sql`SELECT * FROM api_keys WHERE key_value = ${apiKey}`;
             if (rows.length === 0) return res.status(404).json({ status: false, valid: false, message: "Key tidak terdaftar!" });
 
