@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
     const sql = neon(dbUrl);
     
-    // BACA STRICT DARI ENVIRONMENT VARIABLE (TANPA FALLBACK PIN TERBUNGKUS KODE)
+    // BACA STRICT DARI ENVIRONMENT VARIABLE
     const ADMIN_PIN = process.env.ADMIN_PIN;
 
     try {
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
 
         const action = req.query.action || req.body?.action;
 
-        // PROTEKSI ADMIN ACTION (Wajib match dengan process.env.ADMIN_PIN)
+        // PROTEKSI ADMIN ACTION
         if (action) {
             const clientAdminKey = req.headers['x-admin-key'] || req.query.admin_key || req.body?.admin_key;
             if (!ADMIN_PIN || !clientAdminKey || clientAdminKey !== ADMIN_PIN) {
@@ -184,7 +184,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ status: true, data: keys });
         }
 
-        // VALIDASI CLIENT APP (POST UNTUK APLIKASI USER)
+        // VALIDASI CLIENT APP
         if (req.method === 'POST') {
             const apiKey = req.body?.key || req.body?.api_key;
             const rawHwid = req.body?.hwid || req.body?.device_id || 'UNKNOWN_DEVICE';

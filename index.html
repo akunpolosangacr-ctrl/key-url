@@ -56,7 +56,6 @@
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* LOCK SCREEN OVERLAY */
         #lockScreen {
             position: fixed; inset: 0; background: #0b0f19; z-index: 8000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -293,11 +292,23 @@
     <div class="card">
         <h2>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-            Vercel Validation Endpoint
+            Vercel Validation Endpoints
         </h2>
-        <div class="url-box">
-            <span class="url-text" id="vercelUrl">Loading...</span>
-            <button class="btn btn-secondary" style="width: auto;" onclick="copyVercelUrl()">Copy URL</button>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div>
+                <label style="margin-bottom: 4px; font-weight: 600;">Main URL (Permanen):</label>
+                <div class="url-box">
+                    <span class="url-text" id="vercelUrl">Loading...</span>
+                    <button class="btn btn-secondary" style="width: auto;" onclick="copyVercelUrl()">Copy Main URL</button>
+                </div>
+            </div>
+            <div>
+                <label style="margin-bottom: 4px; font-weight: 600;">Direct Deployment URL:</label>
+                <div class="url-box">
+                    <span class="url-text" id="vercelDirectUrl">https://key-f3zt5vyjc-nexusriskia.vercel.app/api/connect</span>
+                    <button class="btn btn-secondary" style="width: auto;" onclick="copyDirectUrl()">Copy Direct URL</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -452,7 +463,12 @@ function openDrawer() { document.getElementById("leftDrawer").classList.add("act
 function closeDrawer() { document.getElementById("leftDrawer").classList.remove("active"); }
 
 function copyVercelUrl() {
-    navigator.clipboard.writeText(window.location.origin + API_ENDPOINT).then(() => showToast("URL Disalin!"));
+    navigator.clipboard.writeText(window.location.origin + API_ENDPOINT).then(() => showToast("Main URL Disalin!"));
+}
+
+function copyDirectUrl() {
+    const directUrl = document.getElementById("vercelDirectUrl").innerText;
+    navigator.clipboard.writeText(directUrl).then(() => showToast("Direct URL Disalin!"));
 }
 
 async function loadKeysFromDatabase() {
