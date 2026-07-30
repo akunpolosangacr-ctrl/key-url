@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Key URL Manager Dashboard</title>
+    <title>Key Manager Portal</title>
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -155,10 +155,36 @@
 
         .form-group { margin-bottom: 12px; }
         label { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.82rem; color: var(--text-muted); }
-        input[type="text"], input[type="number"], input[type="password"] { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--card-border); background-color: #0b0f19; color: var(--text-main); font-size: 0.88rem; transition: border-color 0.2s; }
-        input:focus { border-color: var(--accent-color); }
+        
+        /* FORM INPUT & SELECT STYLING FULL TOUCH FRIENDLY */
+        input[type="text"], input[type="number"], input[type="tel"], select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            background-color: #0b0f19;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+        
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg fill='%2338bdf8' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
 
-        .btn { background-color: var(--accent-color); color: #0b0f19; font-weight: 600; padding: 10px 14px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.85rem; width: 100%; }
+        input:focus, select:focus { border-color: var(--accent-color); }
+
+        .pin-masked {
+            -webkit-text-security: disc !important;
+        }
+
+        .btn { background-color: var(--accent-color); color: #0b0f19; font-weight: 600; padding: 12px 14px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; width: 100%; }
         .btn:active { transform: scale(0.98); background-color: var(--accent-hover); }
         .btn-secondary { background-color: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); }
         .btn-secondary:active { background-color: rgba(56, 189, 248, 0.1); }
@@ -227,17 +253,17 @@
     <p style="margin-top: 12px; font-size: 0.82rem; color: var(--accent-color); font-weight: 600;">MEMUAT SYSTEM...</p>
 </div>
 
-<!-- LOCK SCREEN (SYSTEM LOCKED) -->
+<!-- AUTH SCREEN OVERLAY -->
 <div id="lockScreen">
     <div class="lock-card">
         <div class="lock-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         </div>
-        <h2 style="font-size:1.2rem; color:#fff;">SYSTEM LOCKED</h2>
-        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:-8px;">Masukkan PIN/Passcode Admin untuk Membuka Dashboard</p>
-        <input type="password" id="adminPinInput" placeholder="Masukkan PIN Admin..." style="text-align:center; font-size:1.1rem; letter-spacing:3px;">
+        <h2 style="font-size:1.2rem; color:#fff;">Akses Portal</h2>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:-8px;">Masukkan PIN Verifikasi</p>
+        <input type="tel" id="adminPinInput" class="pin-masked" placeholder="••••" maxlength="10" style="text-align:center; font-size:1.3rem; letter-spacing:4px;">
         <p id="lockErrorMsg" style="font-size:0.78rem; color:var(--danger-color); display:none;"></p>
-        <button class="btn" onclick="unlockDashboard()">Unlock System</button>
+        <button class="btn" onclick="unlockDashboard()">Masuk Portal</button>
     </div>
 </div>
 
@@ -269,7 +295,7 @@
         <div class="drawer-menu-item" onclick="lockOutAdmin()" style="border-color: rgba(239, 68, 68, 0.4); color: var(--danger-color);">
             <span style="display:flex; align-items:center; gap:8px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                Lock Dashboard
+                Keluar
             </span>
         </div>
     </div>
@@ -283,7 +309,7 @@
             </button>
             <h1>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
-                Key URL Manager
+                Key Manager Portal
             </h1>
         </div>
         <p>System Key & Multi-Device Control (Neon DB)</p>
@@ -325,10 +351,23 @@
             <label for="customKey">Custom Key (Opsional - Kosongkan untuk Random vdb_...):</label>
             <input type="text" id="customKey" placeholder="Ketik Custom Key (contoh: MYKEY123)">
         </div>
+        
         <div class="form-group" style="display: flex; gap: 10px;">
+            <!-- SELECT DROPDOWN DENGAN PILIHAN MENIT & HARI FULL TAP -->
             <div style="flex: 1;">
-                <label for="keyDays">Masa Aktif (Hari):</label>
-                <input type="number" id="keyDays" value="30" min="1">
+                <label for="keyDuration">Masa Aktif Key:</label>
+                <select id="keyDuration">
+                    <option value="1m">⏱️ 1 Menit (Test Key)</option>
+                    <option value="30m">⏱️ 30 Menit (Akses Singkat)</option>
+                    <option value="1h">⏱️ 1 Jam</option>
+                    <option value="12h">⏱️ 12 Jam</option>
+                    <option value="1d">📅 1 Hari</option>
+                    <option value="7d">📅 7 Hari (1 Minggu)</option>
+                    <option value="30d" selected>📅 30 Hari (1 Bulan)</option>
+                    <option value="60d">📅 60 Hari (2 Bulan)</option>
+                    <option value="90d">📅 90 Hari (3 Bulan)</option>
+                    <option value="365d">📅 365 Hari (1 Tahun)</option>
+                </select>
             </div>
             <div style="flex: 1;">
                 <label for="deviceLimit">Limit Device:</label>
@@ -354,8 +393,16 @@
         </div>
         <div style="display: flex; gap: 10px;">
             <div style="flex: 1;">
-                <label>Tambah Masa Aktif (Hari):</label>
-                <input type="number" id="modalAddDays" value="0" min="0">
+                <label>Tambah Masa Aktif:</label>
+                <select id="modalAddDuration">
+                    <option value="0" selected>Tidak Tambah</option>
+                    <option value="1m">+1 Menit</option>
+                    <option value="30m">+30 Menit</option>
+                    <option value="1h">+1 Jam</option>
+                    <option value="1d">+1 Hari</option>
+                    <option value="7d">+7 Hari</option>
+                    <option value="30d">+30 Hari</option>
+                </select>
             </div>
             <div style="flex: 1;">
                 <label>Set Limit Device:</label>
@@ -438,7 +485,7 @@ async function fetchWithAdminAuth(url, options = {}) {
     const res = await fetch(url, options);
     if (res.status === 403) {
         showLockScreen();
-        document.getElementById("lockErrorMsg").innerText = "PIN Admin Salah / Akses Ditolak!";
+        document.getElementById("lockErrorMsg").innerText = "PIN Salah / Akses Ditolak!";
         document.getElementById("lockErrorMsg").style.display = "block";
         throw new Error("LOCKED");
     }
@@ -484,6 +531,28 @@ async function loadKeysFromDatabase() {
     }
 }
 
+// FORMAT SISA WAKTU PRESISI (DETIK / MENIT / JAM / HARI)
+function formatRemainingTime(ms) {
+    if (ms <= 0) return "EXPIRED";
+    const totalSeconds = Math.floor(ms / 1000);
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const totalHours = Math.floor(totalMinutes / 60);
+    const days = Math.floor(totalHours / 24);
+
+    if (days > 0) {
+        const remainingHours = totalHours % 24;
+        return `${days} Hari ${remainingHours > 0 ? remainingHours + ' Jam' : ''}`;
+    }
+    if (totalHours > 0) {
+        const remainingMinutes = totalMinutes % 60;
+        return `${totalHours} Jam ${remainingMinutes > 0 ? remainingMinutes + ' Menit' : ''}`;
+    }
+    if (totalMinutes > 0) {
+        return `${totalMinutes} Menit`;
+    }
+    return `${totalSeconds} Detik`;
+}
+
 function renderKeysList(keys) {
     const container = document.getElementById("keyList");
     if (!keys || keys.length === 0) return container.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:10px;">Belum ada key terdaftar.</p>`;
@@ -491,17 +560,18 @@ function renderKeysList(keys) {
     const now = new Date().getTime();
 
     container.innerHTML = keys.map(k => {
-        const isExpired = new Date(k.expired_at).getTime() < now;
+        const remainingMs = new Date(k.expired_at).getTime() - now;
+        const isExpired = remainingMs <= 0;
+        
         let hwids = [];
         try { hwids = JSON.parse(k.hwid_list || '[]'); } catch(e) {}
         const deviceLimit = k.device_limit || 1;
 
-        let remainingMs = new Date(k.expired_at).getTime() - now;
-        let remainingDays = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
+        const timeText = formatRemainingTime(remainingMs);
 
         const statusBadge = isExpired 
             ? `<span class="badge badge-expired">EXPIRED</span>` 
-            : `<span class="badge badge-active">AKTIF (${remainingDays} Hari)</span>`;
+            : `<span class="badge badge-active">AKTIF (${timeText})</span>`;
         
         const deviceBadge = `<span class="badge badge-device">${hwids.length}/${deviceLimit} Devices</span>`;
 
@@ -530,15 +600,25 @@ function renderKeysList(keys) {
 async function createNewKey() {
     const label = document.getElementById("keyLabel").value.trim() || "Untitled Key";
     const customKey = document.getElementById("customKey").value.trim();
-    const days = parseInt(document.getElementById("keyDays").value) || 30;
+    const durationVal = document.getElementById("keyDuration").value;
     const limit = parseInt(document.getElementById("deviceLimit").value) || 1;
+
+    let payload = { label, custom_key: customKey, limit };
+
+    if (durationVal.endsWith("m")) {
+        payload.minutes = parseInt(durationVal.replace("m", ""));
+    } else if (durationVal.endsWith("h")) {
+        payload.minutes = parseInt(durationVal.replace("h", "")) * 60;
+    } else if (durationVal.endsWith("d")) {
+        payload.days = parseInt(durationVal.replace("d", ""));
+    }
 
     showToast("Mengirim ke Database...");
     try {
         const res = await fetchWithAdminAuth(`${API_ENDPOINT}?action=create`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ label, days, custom_key: customKey, limit })
+            body: JSON.stringify(payload)
         });
         const result = await res.json();
         if (result.status) {
@@ -563,7 +643,7 @@ async function openHwidModal(id) {
 
         const keyData = resData.data;
         document.getElementById("modalSetLimit").value = keyData.device_limit || 1;
-        document.getElementById("modalAddDays").value = 0;
+        document.getElementById("modalAddDuration").value = "0";
 
         let hwids = [];
         try { hwids = JSON.parse(keyData.hwid_list || '[]'); } catch(e) {}
@@ -599,14 +679,24 @@ async function openHwidModal(id) {
 
 async function saveKeySettingsFromModal() {
     if (!activeModalKeyId) return;
-    const addDays = parseInt(document.getElementById("modalAddDays").value) || 0;
+    const addDurationVal = document.getElementById("modalAddDuration").value;
     const newLimit = parseInt(document.getElementById("modalSetLimit").value) || 1;
+
+    let payload = { id: activeModalKeyId, new_limit: newLimit };
+
+    if (addDurationVal.endsWith("m")) {
+        payload.add_minutes = parseInt(addDurationVal.replace("m", ""));
+    } else if (addDurationVal.endsWith("h")) {
+        payload.add_minutes = parseInt(addDurationVal.replace("h", "")) * 60;
+    } else if (addDurationVal.endsWith("d")) {
+        payload.add_days = parseInt(addDurationVal.replace("d", ""));
+    }
 
     try {
         const res = await fetchWithAdminAuth(`${API_ENDPOINT}?action=update_key`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: activeModalKeyId, add_days: addDays, new_limit: newLimit })
+            body: JSON.stringify(payload)
         });
         const resData = await res.json();
         if (resData.status) {

@@ -13,8 +13,6 @@ export default async function handler(req, res) {
     }
 
     const sql = neon(dbUrl);
-    
-    // BACA STRICT DARI ENVIRONMENT VARIABLE
     const ADMIN_PIN = process.env.ADMIN_PIN;
 
     try {
@@ -38,7 +36,6 @@ export default async function handler(req, res) {
 
         const action = req.query.action || req.body?.action;
 
-        // PROTEKSI ADMIN ACTION
         if (action) {
             const clientAdminKey = req.headers['x-admin-key'] || req.query.admin_key || req.body?.admin_key;
             if (!ADMIN_PIN || !clientAdminKey || clientAdminKey !== ADMIN_PIN) {
@@ -79,12 +76,19 @@ export default async function handler(req, res) {
             `);
         }
 
-        // ACTION: CREATE KEY
+        // ACTION: CREATE KEY (Mendukung Menit & Hari)
         if (action === 'create') {
-            const { label, days, custom_key, limit } = req.body || {};
-            const activeDays = parseInt(days) || 30;
+            const { label, days, minutes, custom_key, limit } = req.body || {};
             const deviceLimit = parseInt(limit) || 1;
             const keyLabel = label || 'Untitled Key';
+
+            let durationMs = 0;
+            if (minutes && !isNaN(parseInt(minutes))) {
+                durationMs = parseInt(minutes) * 60 * 1000;
+            } else {
+                const activeDays = parseInt(days) || 30;
+                durationMs = activeDays * 24 * 60 * 60 * 1000;
+            }
 
             let keyValue = (custom_key && custom_key.trim() !== '') ? custom_key.trim() : '';
             if (!keyValue) {
@@ -98,19 +102,20 @@ export default async function handler(req, res) {
                 return res.status(400).json({ status: false, message: "Key sudah terpakai di database!" });
             }
 
-            const expiredAt = new Date(Date.now() + activeDays * 24 * 60 * 60 * 1000);
+            const expiredAt = new Date(Date.now() + durationMs);
+            const storedDays = Math.max(1, Math.ceil(durationMs / (24 * 60 * 60 * 1000)));
 
             const result = await sql`
                 INSERT INTO api_keys (label, key_value, expired_at, active_days, device_limit, hwid_list)
-                VALUES (${keyLabel}, ${keyValue}, ${expiredAt.toISOString()}, ${activeDays}, ${deviceLimit}, '[]')
+                VALUES (${keyLabel}, ${keyValue}, ${expiredAt.toISOString()}, ${storedDays}, ${deviceLimit}, '[]')
                 RETURNING *;
             `;
             return res.status(200).json({ status: true, message: "Key tersimpan!", data: result[0] });
         }
 
-        // ACTION: UPDATE KEY
+        // ACTION: UPDATE KEY (Mendukung Penambahan Menit / Hari)
         if (action === 'update_key') {
-            const { id, add_days, new_limit } = req.body || {};
+            const { id, add_days, add_minutes, new_limit } = req.body || {};
             if (!id) return res.status(400).json({ status: false, message: "ID diperlukan" });
 
             const rows = await sql`SELECT expired_at, active_days, device_limit FROM api_keys WHERE id = ${id}`;
@@ -120,8 +125,13 @@ export default async function handler(req, res) {
             const currentExpiredMs = new Date(keyData.expired_at).getTime();
             const nowMs = Date.now();
 
-            const daysToAdd = parseInt(add_days) || 0;
-            const addedMs = daysToAdd * 24 * 60 * 60 * 1000;
+            let addedMs = 0;
+            if (add_minutes && !isNaN(parseInt(add_minutes))) {
+                addedMs += parseInt(add_minutes) * 60 * 1000;
+            }
+            if (add_days && !isNaN(parseInt(add_days))) {
+                addedMs += parseInt(add_days) * 24 * 60 * 60 * 1000;
+            }
 
             let baseTime = currentExpiredMs < nowMs ? nowMs : currentExpiredMs;
             let newExpiredAt = new Date(baseTime + addedMs);
